@@ -15,58 +15,12 @@ import (
 
 	"github.com/yseto/switch-traffic-to-mackerel/collector"
 	"github.com/yseto/switch-traffic-to-mackerel/config"
+	mckr "github.com/yseto/switch-traffic-to-mackerel/mackerel"
 )
 
 var buffers = list.New()
 var mutex = &sync.Mutex{}
 var snapshot []collector.MetricsDutum
-
-var graphDefs = []*mackerel.GraphDefsParam{
-	&mackerel.GraphDefsParam{
-		Name:        "custom.interface.ifInDiscards",
-		Unit:        "integer",
-		DisplayName: "In Discards",
-		Metrics: []*mackerel.GraphDefsMetric{
-			&mackerel.GraphDefsMetric{
-				Name:        "custom.interface.ifInDiscards.*",
-				DisplayName: "%1",
-			},
-		},
-	},
-	&mackerel.GraphDefsParam{
-		Name:        "custom.interface.ifOutDiscards",
-		Unit:        "integer",
-		DisplayName: "Out Discards",
-		Metrics: []*mackerel.GraphDefsMetric{
-			&mackerel.GraphDefsMetric{
-				Name:        "custom.interface.ifOutDiscards.*",
-				DisplayName: "%1",
-			},
-		},
-	},
-	&mackerel.GraphDefsParam{
-		Name:        "custom.interface.ifInErrors",
-		Unit:        "integer",
-		DisplayName: "In Errors",
-		Metrics: []*mackerel.GraphDefsMetric{
-			&mackerel.GraphDefsMetric{
-				Name:        "custom.interface.ifInErrors.*",
-				DisplayName: "%1",
-			},
-		},
-	},
-	&mackerel.GraphDefsParam{
-		Name:        "custom.interface.ifOutErrors",
-		Unit:        "integer",
-		DisplayName: "Out Errors",
-		Metrics: []*mackerel.GraphDefsMetric{
-			&mackerel.GraphDefsMetric{
-				Name:        "custom.interface.ifOutErrors.*",
-				DisplayName: "%1",
-			},
-		},
-	},
-}
 
 var overflowValue = map[string]uint64{
 	"ifInOctets":    math.MaxUint32,
@@ -124,7 +78,7 @@ func initialForMackerel(c *config.Collector, client *mackerel.Client) (*string, 
 		return nil, err
 	}
 	interfaces := []mackerel.Interface{
-		mackerel.Interface{
+		{
 			Name:          "main",
 			IPv4Addresses: []string{c.Target},
 		},
@@ -156,7 +110,7 @@ func initialForMackerel(c *config.Collector, client *mackerel.Client) (*string, 
 			return nil, err
 		}
 	}
-	err = client.CreateGraphDefs(graphDefs)
+	err = client.CreateGraphDefs(mckr.GraphDefs)
 	if err != nil {
 		return nil, err
 	}

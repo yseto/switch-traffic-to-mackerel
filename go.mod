@@ -6,6 +6,7 @@ require (
 	github.com/gosnmp/gosnmp v1.35.0
 	github.com/mackerelio/mackerel-client-go v0.23.0
 	github.com/sirupsen/logrus v1.9.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (

@@ -5,6 +5,10 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+
+	"gopkg.in/yaml.v3"
+
+	"github.com/yseto/switch-traffic-to-mackerel/mib"
 )
 
 type Config struct {
@@ -43,4 +47,60 @@ func (c *Collector) HostIdPath() (string, error) {
 		return "", err
 	}
 	return filepath.Join(wd, fmt.Sprintf("%s.id.txt", c.Target)), nil
+}
+
+func Parse(filename string) (*Collector, error) {
+	f, err := os.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+	var t Config
+	err = yaml.Unmarshal(f, &t)
+	if err != nil {
+		return nil, err
+	}
+
+	if t.Community == "" {
+		return nil, fmt.Errorf("community is needed.")
+	}
+	if t.Target == "" {
+		return nil, fmt.Errorf("target is needed.")
+	}
+
+	name := t.Name
+	if name == "" {
+		name = t.Target
+	}
+
+	c := &Collector{
+		Target:            t.Target,
+		Community:         t.Community,
+		SkipDownLinkState: t.SkipLinkdown,
+		Name:              name,
+	}
+
+	if t.Interface != nil {
+		if t.Interface.Include != nil && t.Interface.Exclude != nil {
+			return nil, fmt.Errorf("Interface.Exclude, Interface.Include is exclusive control.")
+		}
+		if t.Interface.Include != nil {
+			c.IncludeRegexp, err = regexp.Compile(*t.Interface.Include)
+			if err != nil {
+				return nil, err
+			}
+		}
+		if t.Interface.Exclude != nil {
+			c.ExcludeRegexp, err = regexp.Compile(*t.Interface.Exclude)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	c.MIBs, err = mib.Validate(t.Mibs)
+	if err != nil {
+		return nil, err
+	}
+
+	return c, nil
 }

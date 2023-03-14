@@ -6,13 +6,11 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"regexp"
 	"sort"
 	"strings"
 
 	"github.com/maruel/natural"
 	"github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v3"
 
 	"github.com/yseto/switch-traffic-to-mackerel/config"
 	"github.com/yseto/switch-traffic-to-mackerel/mib"
@@ -33,62 +31,6 @@ func (m *MetricsDutum) String() string {
 var log = logrus.New()
 var apikey = os.Getenv("MACKEREL_API_KEY")
 
-func parseConfig(filename string) (*config.Collector, error) {
-	f, err := os.ReadFile(filename)
-	if err != nil {
-		return nil, err
-	}
-	var t config.Config
-	err = yaml.Unmarshal(f, &t)
-	if err != nil {
-		return nil, err
-	}
-
-	if t.Community == "" {
-		return nil, fmt.Errorf("community is needed.")
-	}
-	if t.Target == "" {
-		return nil, fmt.Errorf("target is needed.")
-	}
-
-	name := t.Name
-	if name == "" {
-		name = t.Target
-	}
-
-	c := &config.Collector{
-		Target:            t.Target,
-		Community:         t.Community,
-		SkipDownLinkState: t.SkipLinkdown,
-		Name:              name,
-	}
-
-	if t.Interface != nil {
-		if t.Interface.Include != nil && t.Interface.Exclude != nil {
-			return nil, fmt.Errorf("Interface.Exclude, Interface.Include is exclusive control.")
-		}
-		if t.Interface.Include != nil {
-			c.IncludeRegexp, err = regexp.Compile(*t.Interface.Include)
-			if err != nil {
-				return nil, err
-			}
-		}
-		if t.Interface.Exclude != nil {
-			c.ExcludeRegexp, err = regexp.Compile(*t.Interface.Exclude)
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	c.MIBs, err = mib.Validate(t.Mibs)
-	if err != nil {
-		return nil, err
-	}
-
-	return c, nil
-}
-
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
@@ -102,7 +44,7 @@ func main() {
 	flag.StringVar(&filename, "config", "config.yaml", "config `filename`")
 	flag.Parse()
 
-	collectParams, err := parseConfig(filename)
+	collectParams, err := config.Parse(filename)
 	if err != nil {
 		log.Fatal(err)
 	}

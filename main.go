@@ -76,7 +76,7 @@ func parseFlags() (*CollectParams, error) {
 		return nil, err
 	}
 
-	mibs, err := mibsValidate(rawMibs)
+	mibs, err := mib.Validate(rawMibs)
 	if err != nil {
 		return nil, err
 	}
@@ -185,29 +185,6 @@ func collect(ctx context.Context, c *CollectParams) ([]MetricsDutum, error) {
 		}
 	}
 	return metrics, nil
-}
-
-func mibsValidate(rawMibs *string) ([]string, error) {
-	var parseMibs []string
-	switch *rawMibs {
-	case "all":
-		for key := range mib.Oidmapping {
-			// skipped 32 bit octets.
-			if key == "ifInOctets" || key == "ifOutOctets" {
-				continue
-			}
-			parseMibs = append(parseMibs, key)
-		}
-	case "":
-	default:
-		for _, name := range strings.Split(*rawMibs, ",") {
-			if _, exists := mib.Oidmapping[name]; !exists {
-				return nil, fmt.Errorf("mib %s is not supported.", name)
-			}
-			parseMibs = append(parseMibs, name)
-		}
-	}
-	return parseMibs, nil
 }
 
 func captureIfIndex(oid, name string) (uint64, error) {

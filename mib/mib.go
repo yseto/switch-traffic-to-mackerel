@@ -1,5 +1,10 @@
 package mib
 
+import (
+	"fmt"
+	"strings"
+)
+
 var Oidmapping = map[string]string{
 	"ifInOctets":    "1.3.6.1.2.1.2.2.1.10",
 	"ifOutOctets":   "1.3.6.1.2.1.2.2.1.16",
@@ -9,4 +14,27 @@ var Oidmapping = map[string]string{
 	"ifOutDiscards": "1.3.6.1.2.1.2.2.1.19",
 	"ifInErrors":    "1.3.6.1.2.1.2.2.1.14",
 	"ifOutErrors":   "1.3.6.1.2.1.2.2.1.20",
+}
+
+func Validate(rawMibs *string) ([]string, error) {
+	var parseMibs []string
+	switch *rawMibs {
+	case "all":
+		for key := range Oidmapping {
+			// skipped 32 bit octets.
+			if key == "ifInOctets" || key == "ifOutOctets" {
+				continue
+			}
+			parseMibs = append(parseMibs, key)
+		}
+	case "":
+	default:
+		for _, name := range strings.Split(*rawMibs, ",") {
+			if _, exists := Oidmapping[name]; !exists {
+				return nil, fmt.Errorf("mib %s is not supported.", name)
+			}
+			parseMibs = append(parseMibs, name)
+		}
+	}
+	return parseMibs, nil
 }

@@ -5,10 +5,7 @@ import (
 	"flag"
 	"os"
 	"os/signal"
-	"sort"
-	"strings"
 
-	"github.com/maruel/natural"
 	"github.com/sirupsen/logrus"
 
 	"github.com/yseto/switch-traffic-to-mackerel/collector"
@@ -39,17 +36,10 @@ func main() {
 	log.Info("start")
 
 	if apikey == "" {
-		dutum, err := collector.Do(ctx, collectParams)
+		_, err := collector.Do(ctx, collectParams)
 		if err != nil {
 			log.Fatal(err)
 		}
-
-		var dutumStr []string
-		for i := range dutum {
-			dutumStr = append(dutumStr, dutum[i].String())
-		}
-		sort.Sort(natural.StringSlice(dutumStr))
-		fmt.Println(strings.Join(dutumStr, "\n"))
 	} else {
 		runMackerel(ctx, collectParams)
 	}

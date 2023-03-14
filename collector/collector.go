@@ -2,6 +2,11 @@ package collector
 
 import (
 	"context"
+	"fmt"
+	"sort"
+	"strings"
+
+	"github.com/maruel/natural"
 
 	"github.com/yseto/switch-traffic-to-mackerel/config"
 	"github.com/yseto/switch-traffic-to-mackerel/mib"
@@ -59,4 +64,13 @@ func Do(ctx context.Context, c *config.Collector) ([]MetricsDutum, error) {
 		}
 	}
 	return metrics, nil
+}
+
+func debugPrint(dutum []MetricsDutum) {
+	var dutumStr []string
+	for i := range dutum {
+		dutumStr = append(dutumStr, dutum[i].String())
+	}
+	sort.Sort(natural.StringSlice(dutumStr))
+	fmt.Println(strings.Join(dutumStr, "\n"))
 }

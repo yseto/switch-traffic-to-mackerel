@@ -41,6 +41,7 @@ type Collector struct {
 	ExcludeRegexp     *regexp.Regexp
 	SkipDownLinkState bool
 	Debug             bool
+	Mackerel          *Mackerel
 }
 
 func (c *Collector) HostIdPath() (string, error) {
@@ -103,6 +104,10 @@ func Parse(filename string) (*Collector, error) {
 	c.MIBs, err = mib.Validate(t.Mibs)
 	if err != nil {
 		return nil, err
+	}
+
+	if t.Mackerel != nil {
+		c.Mackerel = t.Mackerel
 	}
 
 	return c, nil

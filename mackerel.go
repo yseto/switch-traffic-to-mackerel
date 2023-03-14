@@ -94,7 +94,7 @@ var deltaValues = map[string]bool{
 }
 
 func runMackerel(ctx context.Context, collectParams *config.Collector) {
-	client := mackerel.NewClient(apikey)
+	client := mackerel.NewClient(collectParams.Mackerel.ApiKey)
 
 	hostId, err := initialForMackerel(collectParams, client)
 	if err != nil {

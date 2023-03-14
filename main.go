@@ -11,8 +11,6 @@ import (
 	"github.com/yseto/switch-traffic-to-mackerel/config"
 )
 
-var apikey = os.Getenv("MACKEREL_API_KEY")
-
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
@@ -31,7 +29,7 @@ func main() {
 
 	log.Println("start")
 
-	if apikey == "" {
+	if collectParams.Mackerel == nil {
 		_, err := collector.Do(ctx, collectParams)
 		if err != nil {
 			log.Fatal(err)

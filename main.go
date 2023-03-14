@@ -32,11 +32,10 @@ func (m *MetricsDutum) String() string {
 }
 
 type CollectParams struct {
-	community, target, name            string
-	mibs                               []string
-	includeRegexp, excludeRegexp       *regexp.Regexp
-	includeInterface, excludeInterface *string
-	skipDownLinkState                  bool
+	community, target, name      string
+	mibs                         []string
+	includeRegexp, excludeRegexp *regexp.Regexp
+	skipDownLinkState            bool
 }
 
 var log = logrus.New()
@@ -108,8 +107,6 @@ func parseFlags() (*CollectParams, error) {
 		mibs:              mibs,
 		includeRegexp:     includeReg,
 		excludeRegexp:     excludeReg,
-		includeInterface:  includeInterface,
-		excludeInterface:  excludeInterface,
 		skipDownLinkState: t.SkipLinkdown,
 	}, nil
 }
@@ -181,11 +178,11 @@ func collect(ctx context.Context, c *CollectParams) ([]MetricsDutum, error) {
 
 		for ifIndex, value := range values {
 			ifName := ifDescr[ifIndex]
-			if c.includeInterface != nil && !c.includeRegexp.MatchString(ifName) {
+			if c.includeRegexp != nil && !c.includeRegexp.MatchString(ifName) {
 				continue
 			}
 
-			if c.excludeInterface != nil && c.excludeRegexp.MatchString(ifName) {
+			if c.excludeRegexp != nil && c.excludeRegexp.MatchString(ifName) {
 				continue
 			}
 

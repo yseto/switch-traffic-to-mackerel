@@ -56,54 +56,49 @@ func parseFlags() (*CollectParams, error) {
 		log.Fatalf("error: %v", err)
 	}
 
-	var community, target, name string
 	if t.Community == "" {
 		log.Fatal("community is needed.")
 	}
-	community = t.Community
 	if t.Target == "" {
 		log.Fatal("target is needed.")
 	}
-	target = t.Target
 
-	name = t.Name
+	name := t.Name
 	if name == "" {
-		name = target
+		name = t.Target
 	}
 
-	var includeReg, excludeReg *regexp.Regexp
+	c := &CollectParams{
+		target:            t.Target,
+		community:         t.Community,
+		skipDownLinkState: t.SkipLinkdown,
+		name:              name,
+	}
+
 	if t.Interface != nil {
 		if t.Interface.Include != nil && t.Interface.Exclude != nil {
 			return nil, errors.New("Interface.Exclude, Interface.Include is exclusive control.")
 		}
 		if t.Interface.Include != nil {
-			includeReg, err = regexp.Compile(*t.Interface.Include)
+			c.includeRegexp, err = regexp.Compile(*t.Interface.Include)
 			if err != nil {
 				return nil, err
 			}
 		}
 		if t.Interface.Exclude != nil {
-			excludeReg, err = regexp.Compile(*t.Interface.Exclude)
+			c.excludeRegexp, err = regexp.Compile(*t.Interface.Exclude)
 			if err != nil {
 				return nil, err
 			}
 		}
 	}
 
-	mibs, err := mib.Validate(t.Mibs)
+	c.mibs, err = mib.Validate(t.Mibs)
 	if err != nil {
 		return nil, err
 	}
 
-	return &CollectParams{
-		target:            target,
-		name:              name,
-		community:         community,
-		mibs:              mibs,
-		includeRegexp:     includeReg,
-		excludeRegexp:     excludeReg,
-		skipDownLinkState: t.SkipLinkdown,
-	}, nil
+	return c, nil
 }
 
 func main() {

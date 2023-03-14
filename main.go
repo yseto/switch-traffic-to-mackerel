@@ -30,20 +30,10 @@ func (m *MetricsDutum) String() string {
 	return fmt.Sprintf("%d\t%s\t%s\t%d", m.IfIndex, m.IfName, m.Mib, m.Value)
 }
 
-type CollectParams struct {
-	Community         string
-	Target            string
-	Name              string
-	MIBs              []string
-	IncludeRegexp     *regexp.Regexp
-	ExcludeRegexp     *regexp.Regexp
-	SkipDownLinkState bool
-}
-
 var log = logrus.New()
 var apikey = os.Getenv("MACKEREL_API_KEY")
 
-func parseConfig(filename string) (*CollectParams, error) {
+func parseConfig(filename string) (*config.Collector, error) {
 	f, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
@@ -66,7 +56,7 @@ func parseConfig(filename string) (*CollectParams, error) {
 		name = t.Target
 	}
 
-	c := &CollectParams{
+	c := &config.Collector{
 		Target:            t.Target,
 		Community:         t.Community,
 		SkipDownLinkState: t.SkipLinkdown,
@@ -136,7 +126,7 @@ func main() {
 	}
 }
 
-func collect(ctx context.Context, c *CollectParams) ([]MetricsDutum, error) {
+func collect(ctx context.Context, c *config.Collector) ([]MetricsDutum, error) {
 	snmpClient, err := snmp.Init(ctx, c.Target, c.Community)
 	if err != nil {
 		return nil, err

@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"math"
 	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 	"time"
 
 	mackerel "github.com/mackerelio/mackerel-client-go"
+	"github.com/yseto/switch-traffic-to-mackerel/config"
 )
 
 var buffers = list.New()
@@ -90,7 +90,7 @@ var deltaValues = map[string]bool{
 	"ifHCOutOctets": true,
 }
 
-func runMackerel(ctx context.Context, collectParams *CollectParams) {
+func runMackerel(ctx context.Context, collectParams *config.Collector) {
 	client := mackerel.NewClient(apikey)
 
 	hostId, err := initialForMackerel(collectParams, client)
@@ -113,10 +113,10 @@ func runMackerel(ctx context.Context, collectParams *CollectParams) {
 	wg.Wait()
 }
 
-func initialForMackerel(c *CollectParams, client *mackerel.Client) (*string, error) {
+func initialForMackerel(c *config.Collector, client *mackerel.Client) (*string, error) {
 	log.Info("init for mackerel")
 
-	idPath, err := c.hostIdPath()
+	idPath, err := c.HostIdPath()
 	if err != nil {
 		return nil, err
 	}
@@ -160,15 +160,7 @@ func initialForMackerel(c *CollectParams, client *mackerel.Client) (*string, err
 	return &hostId, nil
 }
 
-func (c *CollectParams) hostIdPath() (string, error) {
-	wd, err := os.Getwd()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(wd, fmt.Sprintf("%s.id.txt", c.Target)), nil
-}
-
-func ticker(ctx context.Context, wg *sync.WaitGroup, hostId *string, collectParams *CollectParams) {
+func ticker(ctx context.Context, wg *sync.WaitGroup, hostId *string, collectParams *config.Collector) {
 	t := time.NewTicker(1 * time.Minute)
 	defer func() {
 		t.Stop()
@@ -201,7 +193,7 @@ func calcurateDiff(a, b, overflow uint64) uint64 {
 	}
 }
 
-func innerTicker(ctx context.Context, hostId *string, collectParams *CollectParams) error {
+func innerTicker(ctx context.Context, hostId *string, collectParams *config.Collector) error {
 	rawMetrics, err := collect(ctx, collectParams)
 	if err != nil {
 		return err

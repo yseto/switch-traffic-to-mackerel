@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -48,19 +47,19 @@ func parseFlags() (*CollectParams, error) {
 
 	f, err := os.ReadFile(configFilename)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	var t config.Config
 	err = yaml.Unmarshal(f, &t)
 	if err != nil {
-		log.Fatalf("error: %v", err)
+		return nil, err
 	}
 
 	if t.Community == "" {
-		log.Fatal("community is needed.")
+		return nil, fmt.Errorf("community is needed.")
 	}
 	if t.Target == "" {
-		log.Fatal("target is needed.")
+		return nil, fmt.Errorf("target is needed.")
 	}
 
 	name := t.Name
@@ -77,7 +76,7 @@ func parseFlags() (*CollectParams, error) {
 
 	if t.Interface != nil {
 		if t.Interface.Include != nil && t.Interface.Exclude != nil {
-			return nil, errors.New("Interface.Exclude, Interface.Include is exclusive control.")
+			return nil, fmt.Errorf("Interface.Exclude, Interface.Include is exclusive control.")
 		}
 		if t.Interface.Include != nil {
 			c.includeRegexp, err = regexp.Compile(*t.Interface.Include)

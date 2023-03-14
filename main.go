@@ -10,7 +10,9 @@ import (
 	"regexp"
 
 	"github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v3"
 
+	"github.com/yseto/switch-traffic-to-mackerel/config"
 	"github.com/yseto/switch-traffic-to-mackerel/mib"
 	"github.com/yseto/switch-traffic-to-mackerel/snmp"
 )
@@ -35,15 +37,38 @@ var apikey = os.Getenv("MACKEREL_API_KEY")
 
 func parseFlags() (*CollectParams, error) {
 	var community, target, name string
-	flag.StringVar(&community, "community", "public", "the community string for device")
-	flag.StringVar(&target, "target", "127.0.0.1", "ip address")
-	includeInterface := flag.String("include-interface", "", "include interface name")
-	excludeInterface := flag.String("exclude-interface", "", "exclude interface name")
+	var includeInterface, excludeInterface *string
 	rawMibs := flag.String("mibs", "all", "mib name joind with ',' or 'all'")
 	level := flag.Bool("verbose", false, "verbose")
 	skipDownLinkState := flag.Bool("skip-down-link-state", false, "skip down link state")
 	flag.StringVar(&name, "name", "", "name")
+	var configFilename string
+	flag.StringVar(&configFilename, "config", "config.yaml", "config `filename`")
 	flag.Parse()
+
+	f, err := os.ReadFile(configFilename)
+	if err != nil {
+		log.Fatal(err)
+	}
+	var t config.Config
+	err = yaml.Unmarshal(f, &t)
+	if err != nil {
+		log.Fatalf("error: %v", err)
+	}
+
+	if t.Community == "" {
+		log.Fatal("community is needed.")
+	}
+	community = t.Community
+	if t.Target == "" {
+		log.Fatal("target is needed.")
+	}
+	target = t.Target
+
+	if t.Interface != nil {
+		includeInterface = t.Interface.Include
+		excludeInterface = t.Interface.Exclude
+	}
 
 	logLevel := logrus.WarnLevel
 	if *level {
@@ -55,16 +80,22 @@ func parseFlags() (*CollectParams, error) {
 		name = target
 	}
 
-	if *includeInterface != "" && *excludeInterface != "" {
+	if includeInterface != nil && excludeInterface != nil {
 		return nil, errors.New("excludeInterface, includeInterface is exclusive control.")
 	}
-	includeReg, err := regexp.Compile(*includeInterface)
-	if err != nil {
-		return nil, err
+	var includeReg *regexp.Regexp
+	if includeInterface != nil {
+		includeReg, err = regexp.Compile(*includeInterface)
+		if err != nil {
+			return nil, err
+		}
 	}
-	excludeReg, err := regexp.Compile(*excludeInterface)
-	if err != nil {
-		return nil, err
+	var excludeReg *regexp.Regexp
+	if excludeInterface != nil {
+		excludeReg, err = regexp.Compile(*excludeInterface)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	mibs, err := mib.Validate(rawMibs)
@@ -147,11 +178,11 @@ func collect(ctx context.Context, c *CollectParams) ([]MetricsDutum, error) {
 
 		for ifIndex, value := range values {
 			ifName := ifDescr[ifIndex]
-			if *c.includeInterface != "" && !c.includeRegexp.MatchString(ifName) {
+			if c.includeInterface != nil && !c.includeRegexp.MatchString(ifName) {
 				continue
 			}
 
-			if *c.excludeInterface != "" && c.excludeRegexp.MatchString(ifName) {
+			if c.excludeInterface != nil && c.excludeRegexp.MatchString(ifName) {
 				continue
 			}
 

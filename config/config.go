@@ -11,8 +11,8 @@ type Config struct {
 }
 
 type Interface struct {
-	Include string `yaml:"include"`
-	Exclude string `yaml:"exclude"`
+	Include *string `yaml:"include"`
+	Exclude *string `yaml:"exclude"`
 }
 
 type Mackerel struct {

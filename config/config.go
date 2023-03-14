@@ -11,6 +11,8 @@ import (
 	"github.com/yseto/switch-traffic-to-mackerel/mib"
 )
 
+var loadedFilename string
+
 type Config struct {
 	Community    string     `yaml:"community"`
 	Target       string     `yaml:"target"`
@@ -52,7 +54,8 @@ func (c *Collector) HostIdPath() (string, error) {
 	return filepath.Join(wd, fmt.Sprintf("%s.id.txt", c.Target)), nil
 }
 
-func Parse(filename string) (*Collector, error) {
+func Init(filename string) (*Collector, error) {
+	loadedFilename = filename
 	f, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err

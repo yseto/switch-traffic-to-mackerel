@@ -21,7 +21,7 @@ func main() {
 	flag.BoolVar(&debug, "debug", false, "debug")
 	flag.Parse()
 
-	collectParams, err := config.Parse(filename)
+	collectParams, err := config.Init(filename)
 	if err != nil {
 		log.Fatal(err)
 	}

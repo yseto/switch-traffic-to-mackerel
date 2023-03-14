@@ -42,8 +42,6 @@ var log = logrus.New()
 var apikey = os.Getenv("MACKEREL_API_KEY")
 
 func parseFlags() (*CollectParams, error) {
-	var community, target, name string
-	var includeInterface, excludeInterface *string
 	var configFilename string
 	flag.StringVar(&configFilename, "config", "config.yaml", "config `filename`")
 	flag.Parse()
@@ -58,6 +56,7 @@ func parseFlags() (*CollectParams, error) {
 		log.Fatalf("error: %v", err)
 	}
 
+	var community, target, name string
 	if t.Community == "" {
 		log.Fatal("community is needed.")
 	}
@@ -67,14 +66,15 @@ func parseFlags() (*CollectParams, error) {
 	}
 	target = t.Target
 
-	if t.Interface != nil {
-		includeInterface = t.Interface.Include
-		excludeInterface = t.Interface.Exclude
-	}
-
 	name = t.Name
 	if name == "" {
 		name = target
+	}
+
+	var includeInterface, excludeInterface *string
+	if t.Interface != nil {
+		includeInterface = t.Interface.Include
+		excludeInterface = t.Interface.Exclude
 	}
 
 	if includeInterface != nil && excludeInterface != nil {

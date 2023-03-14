@@ -14,6 +14,8 @@ import (
 
 	"github.com/gosnmp/gosnmp"
 	"github.com/sirupsen/logrus"
+
+	"github.com/yseto/switch-traffic-to-mackerel/mib"
 )
 
 const (
@@ -21,17 +23,6 @@ const (
 	MIBifDescr      = "1.3.6.1.2.1.2.2.1.2"
 	MIBifOperStatus = "1.3.6.1.2.1.2.2.1.8"
 )
-
-var mibOidmapping = map[string]string{
-	"ifInOctets":    "1.3.6.1.2.1.2.2.1.10",
-	"ifOutOctets":   "1.3.6.1.2.1.2.2.1.16",
-	"ifHCInOctets":  "1.3.6.1.2.1.31.1.1.1.6",
-	"ifHCOutOctets": "1.3.6.1.2.1.31.1.1.1.10",
-	"ifInDiscards":  "1.3.6.1.2.1.2.2.1.13",
-	"ifOutDiscards": "1.3.6.1.2.1.2.2.1.19",
-	"ifInErrors":    "1.3.6.1.2.1.2.2.1.14",
-	"ifOutErrors":   "1.3.6.1.2.1.2.2.1.20",
-}
 
 type MetricsDutum struct {
 	IfIndex uint64 `json:"ifIndex"`
@@ -162,8 +153,8 @@ func collect(ctx context.Context, c *CollectParams) ([]MetricsDutum, error) {
 
 	metrics := make([]MetricsDutum, 0)
 
-	for _, mib := range c.mibs {
-		values, err := bulkWalk(mibOidmapping[mib], ifNumber)
+	for _, mibName := range c.mibs {
+		values, err := bulkWalk(mib.Oidmapping[mibName], ifNumber)
 		if err != nil {
 			return nil, err
 		}
@@ -185,12 +176,12 @@ func collect(ctx context.Context, c *CollectParams) ([]MetricsDutum, error) {
 
 			log.WithFields(logrus.Fields{
 				"IfIndex": ifIndex,
-				"Mib":     mib,
+				"Mib":     mibName,
 				"IfName":  ifName,
 				"Value":   value,
 			}).Debug()
 
-			metrics = append(metrics, MetricsDutum{IfIndex: ifIndex, Mib: mib, IfName: ifName, Value: value})
+			metrics = append(metrics, MetricsDutum{IfIndex: ifIndex, Mib: mibName, IfName: ifName, Value: value})
 		}
 	}
 	return metrics, nil
@@ -200,7 +191,7 @@ func mibsValidate(rawMibs *string) ([]string, error) {
 	var parseMibs []string
 	switch *rawMibs {
 	case "all":
-		for key := range mibOidmapping {
+		for key := range mib.Oidmapping {
 			// skipped 32 bit octets.
 			if key == "ifInOctets" || key == "ifOutOctets" {
 				continue
@@ -210,7 +201,7 @@ func mibsValidate(rawMibs *string) ([]string, error) {
 	case "":
 	default:
 		for _, name := range strings.Split(*rawMibs, ",") {
-			if _, exists := mibOidmapping[name]; !exists {
+			if _, exists := mib.Oidmapping[name]; !exists {
 				return nil, fmt.Errorf("mib %s is not supported.", name)
 			}
 			parseMibs = append(parseMibs, name)

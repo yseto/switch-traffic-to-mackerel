@@ -40,12 +40,8 @@ type CollectParams struct {
 var log = logrus.New()
 var apikey = os.Getenv("MACKEREL_API_KEY")
 
-func parseFlags() (*CollectParams, error) {
-	var configFilename string
-	flag.StringVar(&configFilename, "config", "config.yaml", "config `filename`")
-	flag.Parse()
-
-	f, err := os.ReadFile(configFilename)
+func parseConfig(filename string) (*CollectParams, error) {
+	f, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +105,11 @@ func main() {
 		FullTimestamp: true,
 	})
 
-	collectParams, err := parseFlags()
+	var filename string
+	flag.StringVar(&filename, "config", "config.yaml", "config `filename`")
+	flag.Parse()
+
+	collectParams, err := parseConfig(filename)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -19,6 +19,7 @@ type Config struct {
 	SkipLinkdown bool       `yaml:"skip-linkdown"`
 	Name         string     `yaml:"name"`
 	Mackerel     *Mackerel  `yaml:"mackerel"`
+	Debug        bool       `yaml:"debug"`
 }
 
 type Interface struct {
@@ -39,6 +40,7 @@ type Collector struct {
 	IncludeRegexp     *regexp.Regexp
 	ExcludeRegexp     *regexp.Regexp
 	SkipDownLinkState bool
+	Debug             bool
 }
 
 func (c *Collector) HostIdPath() (string, error) {
@@ -77,6 +79,7 @@ func Parse(filename string) (*Collector, error) {
 		Community:         t.Community,
 		SkipDownLinkState: t.SkipLinkdown,
 		Name:              name,
+		Debug:             t.Debug,
 	}
 
 	if t.Interface != nil {

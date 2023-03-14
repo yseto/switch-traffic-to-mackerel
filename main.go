@@ -25,13 +25,16 @@ func main() {
 	})
 
 	var filename string
+	var debug bool
 	flag.StringVar(&filename, "config", "config.yaml", "config `filename`")
+	flag.BoolVar(&debug, "debug", false, "debug")
 	flag.Parse()
 
 	collectParams, err := config.Parse(filename)
 	if err != nil {
 		log.Fatal(err)
 	}
+	collectParams.Debug = (collectParams.Debug || debug)
 
 	log.Info("start")
 

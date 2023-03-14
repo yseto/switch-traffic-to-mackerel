@@ -63,6 +63,9 @@ func Do(ctx context.Context, c *config.Collector) ([]MetricsDutum, error) {
 			metrics = append(metrics, MetricsDutum{IfIndex: ifIndex, Mib: mibName, IfName: ifName, Value: value})
 		}
 	}
+	if c.Debug {
+		debugPrint(metrics)
+	}
 	return metrics, nil
 }
 

@@ -38,7 +38,6 @@ var apikey = os.Getenv("MACKEREL_API_KEY")
 func parseFlags() (*CollectParams, error) {
 	var community, target, name string
 	var includeInterface, excludeInterface *string
-	rawMibs := flag.String("mibs", "all", "mib name joind with ',' or 'all'")
 	level := flag.Bool("verbose", false, "verbose")
 	skipDownLinkState := flag.Bool("skip-down-link-state", false, "skip down link state")
 	flag.StringVar(&name, "name", "", "name")
@@ -98,7 +97,7 @@ func parseFlags() (*CollectParams, error) {
 		}
 	}
 
-	mibs, err := mib.Validate(rawMibs)
+	mibs, err := mib.Validate(t.Mibs)
 	if err != nil {
 		return nil, err
 	}

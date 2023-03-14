@@ -71,27 +71,22 @@ func parseFlags() (*CollectParams, error) {
 		name = target
 	}
 
-	var includeInterface, excludeInterface *string
+	var includeReg, excludeReg *regexp.Regexp
 	if t.Interface != nil {
-		includeInterface = t.Interface.Include
-		excludeInterface = t.Interface.Exclude
-	}
-
-	if includeInterface != nil && excludeInterface != nil {
-		return nil, errors.New("excludeInterface, includeInterface is exclusive control.")
-	}
-	var includeReg *regexp.Regexp
-	if includeInterface != nil {
-		includeReg, err = regexp.Compile(*includeInterface)
-		if err != nil {
-			return nil, err
+		if t.Interface.Include != nil && t.Interface.Exclude != nil {
+			return nil, errors.New("Interface.Exclude, Interface.Include is exclusive control.")
 		}
-	}
-	var excludeReg *regexp.Regexp
-	if excludeInterface != nil {
-		excludeReg, err = regexp.Compile(*excludeInterface)
-		if err != nil {
-			return nil, err
+		if t.Interface.Include != nil {
+			includeReg, err = regexp.Compile(*t.Interface.Include)
+			if err != nil {
+				return nil, err
+			}
+		}
+		if t.Interface.Exclude != nil {
+			excludeReg, err = regexp.Compile(*t.Interface.Exclude)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 

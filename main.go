@@ -8,7 +8,10 @@ import (
 	"os"
 	"os/signal"
 	"regexp"
+	"sort"
+	"strings"
 
+	"github.com/maruel/natural"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 
@@ -22,6 +25,10 @@ type MetricsDutum struct {
 	Mib     string `json:"mib"`
 	IfName  string `json:"ifName"`
 	Value   uint64 `json:"value"`
+}
+
+func (m *MetricsDutum) String() string {
+	return fmt.Sprintf("%d\t%s\t%s\t%d", m.IfIndex, m.IfName, m.Mib, m.Value)
 }
 
 type CollectParams struct {
@@ -133,10 +140,17 @@ func main() {
 	if apikey == "" {
 		log.SetLevel(logrus.DebugLevel)
 
-		_, err := collect(ctx, collectParams)
+		dutum, err := collect(ctx, collectParams)
 		if err != nil {
 			log.Fatal(err)
 		}
+
+		var dutumStr []string
+		for i := range dutum {
+			dutumStr = append(dutumStr, dutum[i].String())
+		}
+		sort.Sort(natural.StringSlice(dutumStr))
+		fmt.Println(strings.Join(dutumStr, "\n"))
 	} else {
 		runMackerel(ctx, collectParams)
 	}

@@ -8,20 +8,11 @@ import (
 	"os"
 	"os/signal"
 	"regexp"
-	"strconv"
-	"strings"
 
-	"github.com/gosnmp/gosnmp"
 	"github.com/sirupsen/logrus"
 
 	"github.com/yseto/switch-traffic-to-mackerel/mib"
 	"github.com/yseto/switch-traffic-to-mackerel/snmp"
-)
-
-const (
-	MIBifNumber     = "1.3.6.1.2.1.2.1.0"
-	MIBifDescr      = "1.3.6.1.2.1.2.2.1.2"
-	MIBifOperStatus = "1.3.6.1.2.1.2.2.1.8"
 )
 
 type MetricsDutum struct {
@@ -131,18 +122,18 @@ func collect(ctx context.Context, c *CollectParams) ([]MetricsDutum, error) {
 	}
 	defer snmp.Default.Conn.Close()
 
-	ifNumber, err := getInterfaceNumber()
+	ifNumber, err := snmp.GetInterfaceNumber()
 	if err != nil {
 		return nil, err
 	}
-	ifDescr, err := bulkWalkGetInterfaceName(ifNumber)
+	ifDescr, err := snmp.BulkWalkGetInterfaceName(ifNumber)
 	if err != nil {
 		return nil, err
 	}
 
 	var ifOperStatus map[uint64]bool
 	if *c.skipDownLinkState {
-		ifOperStatus, err = bulkWalkGetInterfaceState(ifNumber)
+		ifOperStatus, err = snmp.BulkWalkGetInterfaceState(ifNumber)
 		if err != nil {
 			return nil, err
 		}
@@ -151,7 +142,7 @@ func collect(ctx context.Context, c *CollectParams) ([]MetricsDutum, error) {
 	metrics := make([]MetricsDutum, 0)
 
 	for _, mibName := range c.mibs {
-		values, err := bulkWalk(mib.Oidmapping[mibName], ifNumber)
+		values, err := snmp.BulkWalk(mib.Oidmapping[mibName], ifNumber)
 		if err != nil {
 			return nil, err
 		}
@@ -182,91 +173,4 @@ func collect(ctx context.Context, c *CollectParams) ([]MetricsDutum, error) {
 		}
 	}
 	return metrics, nil
-}
-
-func captureIfIndex(oid, name string) (uint64, error) {
-	indexStr := strings.Replace(name, "."+oid+".", "", 1)
-	return strconv.ParseUint(indexStr, 10, 64)
-}
-
-func getInterfaceNumber() (uint64, error) {
-	result, err := snmp.Default.Get([]string{MIBifNumber})
-	if err != nil {
-		return 0, err
-	}
-	variable := result.Variables[0]
-	switch variable.Type {
-	case gosnmp.OctetString:
-		return 0, errors.New("cant get interface number")
-	default:
-		return gosnmp.ToBigInt(variable.Value).Uint64(), nil
-	}
-}
-
-func bulkWalkGetInterfaceName(length uint64) (map[uint64]string, error) {
-	kv := make(map[uint64]string, length)
-	err := snmp.Default.BulkWalk(MIBifDescr, func(pdu gosnmp.SnmpPDU) error {
-		index, err := captureIfIndex(MIBifDescr, pdu.Name)
-		if err != nil {
-			return err
-		}
-		switch pdu.Type {
-		case gosnmp.OctetString:
-			kv[index] = string(pdu.Value.([]byte))
-		default:
-			return errors.New("cant parse interface name.")
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	return kv, nil
-}
-
-func bulkWalkGetInterfaceState(length uint64) (map[uint64]bool, error) {
-	kv := make(map[uint64]bool, length)
-	err := snmp.Default.BulkWalk(MIBifOperStatus, func(pdu gosnmp.SnmpPDU) error {
-		index, err := captureIfIndex(MIBifOperStatus, pdu.Name)
-		if err != nil {
-			return err
-		}
-		switch pdu.Type {
-		case gosnmp.OctetString:
-			return errors.New("cant parse value.")
-		default:
-			tmp := gosnmp.ToBigInt(pdu.Value).Uint64()
-			if tmp != 2 {
-				kv[index] = true
-			} else {
-				kv[index] = false
-			}
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	return kv, nil
-}
-
-func bulkWalk(oid string, length uint64) (map[uint64]uint64, error) {
-	kv := make(map[uint64]uint64, length)
-	err := snmp.Default.BulkWalk(oid, func(pdu gosnmp.SnmpPDU) error {
-		index, err := captureIfIndex(oid, pdu.Name)
-		if err != nil {
-			return err
-		}
-		switch pdu.Type {
-		case gosnmp.OctetString:
-			return errors.New("cant parse value.")
-		default:
-			kv[index] = gosnmp.ToBigInt(pdu.Value).Uint64()
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	return kv, nil
 }

@@ -39,7 +39,6 @@ func parseFlags() (*CollectParams, error) {
 	var community, target, name string
 	var includeInterface, excludeInterface *string
 	level := flag.Bool("verbose", false, "verbose")
-	flag.StringVar(&name, "name", "", "name")
 	var configFilename string
 	flag.StringVar(&configFilename, "config", "config.yaml", "config `filename`")
 	flag.Parse()
@@ -74,6 +73,7 @@ func parseFlags() (*CollectParams, error) {
 	}
 	log.SetLevel(logLevel)
 
+	name = t.Name
 	if name == "" {
 		name = target
 	}

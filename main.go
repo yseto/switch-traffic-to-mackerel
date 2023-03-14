@@ -31,10 +31,13 @@ func (m *MetricsDutum) String() string {
 }
 
 type CollectParams struct {
-	community, target, name      string
-	mibs                         []string
-	includeRegexp, excludeRegexp *regexp.Regexp
-	skipDownLinkState            bool
+	Community         string
+	Target            string
+	Name              string
+	MIBs              []string
+	IncludeRegexp     *regexp.Regexp
+	ExcludeRegexp     *regexp.Regexp
+	SkipDownLinkState bool
 }
 
 var log = logrus.New()
@@ -64,10 +67,10 @@ func parseConfig(filename string) (*CollectParams, error) {
 	}
 
 	c := &CollectParams{
-		target:            t.Target,
-		community:         t.Community,
-		skipDownLinkState: t.SkipLinkdown,
-		name:              name,
+		Target:            t.Target,
+		Community:         t.Community,
+		SkipDownLinkState: t.SkipLinkdown,
+		Name:              name,
 	}
 
 	if t.Interface != nil {
@@ -75,20 +78,20 @@ func parseConfig(filename string) (*CollectParams, error) {
 			return nil, fmt.Errorf("Interface.Exclude, Interface.Include is exclusive control.")
 		}
 		if t.Interface.Include != nil {
-			c.includeRegexp, err = regexp.Compile(*t.Interface.Include)
+			c.IncludeRegexp, err = regexp.Compile(*t.Interface.Include)
 			if err != nil {
 				return nil, err
 			}
 		}
 		if t.Interface.Exclude != nil {
-			c.excludeRegexp, err = regexp.Compile(*t.Interface.Exclude)
+			c.ExcludeRegexp, err = regexp.Compile(*t.Interface.Exclude)
 			if err != nil {
 				return nil, err
 			}
 		}
 	}
 
-	c.mibs, err = mib.Validate(t.Mibs)
+	c.MIBs, err = mib.Validate(t.Mibs)
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +137,7 @@ func main() {
 }
 
 func collect(ctx context.Context, c *CollectParams) ([]MetricsDutum, error) {
-	snmpClient, err := snmp.Init(ctx, c.target, c.community)
+	snmpClient, err := snmp.Init(ctx, c.Target, c.Community)
 	if err != nil {
 		return nil, err
 	}
@@ -150,7 +153,7 @@ func collect(ctx context.Context, c *CollectParams) ([]MetricsDutum, error) {
 	}
 
 	var ifOperStatus map[uint64]bool
-	if c.skipDownLinkState {
+	if c.SkipDownLinkState {
 		ifOperStatus, err = snmpClient.BulkWalkGetInterfaceState(ifNumber)
 		if err != nil {
 			return nil, err
@@ -159,7 +162,7 @@ func collect(ctx context.Context, c *CollectParams) ([]MetricsDutum, error) {
 
 	metrics := make([]MetricsDutum, 0)
 
-	for _, mibName := range c.mibs {
+	for _, mibName := range c.MIBs {
 		values, err := snmpClient.BulkWalk(mib.Oidmapping[mibName], ifNumber)
 		if err != nil {
 			return nil, err
@@ -167,16 +170,16 @@ func collect(ctx context.Context, c *CollectParams) ([]MetricsDutum, error) {
 
 		for ifIndex, value := range values {
 			ifName := ifDescr[ifIndex]
-			if c.includeRegexp != nil && !c.includeRegexp.MatchString(ifName) {
+			if c.IncludeRegexp != nil && !c.IncludeRegexp.MatchString(ifName) {
 				continue
 			}
 
-			if c.excludeRegexp != nil && c.excludeRegexp.MatchString(ifName) {
+			if c.ExcludeRegexp != nil && c.ExcludeRegexp.MatchString(ifName) {
 				continue
 			}
 
 			// skip when down(2)
-			if c.skipDownLinkState && !ifOperStatus[ifIndex] {
+			if c.SkipDownLinkState && !ifOperStatus[ifIndex] {
 				continue
 			}
 

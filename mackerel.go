@@ -123,7 +123,7 @@ func initialForMackerel(c *CollectParams, client *mackerel.Client) (*string, err
 	interfaces := []mackerel.Interface{
 		mackerel.Interface{
 			Name:          "main",
-			IPv4Addresses: []string{c.target},
+			IPv4Addresses: []string{c.Target},
 		},
 	}
 	var hostId string
@@ -134,7 +134,7 @@ func initialForMackerel(c *CollectParams, client *mackerel.Client) (*string, err
 		}
 		hostId = string(bytes)
 		_, err = client.UpdateHost(hostId, &mackerel.UpdateHostParam{
-			Name:       c.name,
+			Name:       c.Name,
 			Interfaces: interfaces,
 		})
 		if err != nil {
@@ -142,7 +142,7 @@ func initialForMackerel(c *CollectParams, client *mackerel.Client) (*string, err
 		}
 	} else {
 		hostId, err = client.CreateHost(&mackerel.CreateHostParam{
-			Name:       c.name,
+			Name:       c.Name,
 			Interfaces: interfaces,
 		})
 		if err != nil {
@@ -165,7 +165,7 @@ func (c *CollectParams) hostIdPath() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(wd, fmt.Sprintf("%s.id.txt", c.target)), nil
+	return filepath.Join(wd, fmt.Sprintf("%s.id.txt", c.Target)), nil
 }
 
 func ticker(ctx context.Context, wg *sync.WaitGroup, hostId *string, collectParams *CollectParams) {

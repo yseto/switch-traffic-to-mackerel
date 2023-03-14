@@ -29,7 +29,7 @@ type CollectParams struct {
 	mibs                               []string
 	includeRegexp, excludeRegexp       *regexp.Regexp
 	includeInterface, excludeInterface *string
-	skipDownLinkState                  *bool
+	skipDownLinkState                  bool
 }
 
 var log = logrus.New()
@@ -39,7 +39,6 @@ func parseFlags() (*CollectParams, error) {
 	var community, target, name string
 	var includeInterface, excludeInterface *string
 	level := flag.Bool("verbose", false, "verbose")
-	skipDownLinkState := flag.Bool("skip-down-link-state", false, "skip down link state")
 	flag.StringVar(&name, "name", "", "name")
 	var configFilename string
 	flag.StringVar(&configFilename, "config", "config.yaml", "config `filename`")
@@ -111,7 +110,7 @@ func parseFlags() (*CollectParams, error) {
 		excludeRegexp:     excludeReg,
 		includeInterface:  includeInterface,
 		excludeInterface:  excludeInterface,
-		skipDownLinkState: skipDownLinkState,
+		skipDownLinkState: t.SkipLinkdown,
 	}, nil
 }
 
@@ -160,7 +159,7 @@ func collect(ctx context.Context, c *CollectParams) ([]MetricsDutum, error) {
 	}
 
 	var ifOperStatus map[uint64]bool
-	if *c.skipDownLinkState {
+	if c.skipDownLinkState {
 		ifOperStatus, err = snmpClient.BulkWalkGetInterfaceState(ifNumber)
 		if err != nil {
 			return nil, err
@@ -186,7 +185,7 @@ func collect(ctx context.Context, c *CollectParams) ([]MetricsDutum, error) {
 			}
 
 			// skip when down(2)
-			if *c.skipDownLinkState && !ifOperStatus[ifIndex] {
+			if c.skipDownLinkState && !ifOperStatus[ifIndex] {
 				continue
 			}
 

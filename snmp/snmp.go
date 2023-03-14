@@ -10,10 +10,18 @@ import (
 	"github.com/gosnmp/gosnmp"
 )
 
-var Default *gosnmp.GoSNMP
+const (
+	MIBifNumber     = "1.3.6.1.2.1.2.1.0"
+	MIBifDescr      = "1.3.6.1.2.1.2.2.1.2"
+	MIBifOperStatus = "1.3.6.1.2.1.2.2.1.8"
+)
 
-func Init(ctx context.Context, target, community string) {
-	Default = &gosnmp.GoSNMP{
+type SNMP struct {
+	handler *gosnmp.GoSNMP
+}
+
+func Init(ctx context.Context, target, community string) (*SNMP, error) {
+	g := &gosnmp.GoSNMP{
 		Context:            ctx,
 		Target:             target,
 		Port:               161,
@@ -25,16 +33,19 @@ func Init(ctx context.Context, target, community string) {
 		ExponentialTimeout: true,
 		MaxOids:            gosnmp.MaxOids,
 	}
+	err := g.Connect()
+	if err != nil {
+		return nil, err
+	}
+	return &SNMP{handler: g}, nil
 }
 
-const (
-	MIBifNumber     = "1.3.6.1.2.1.2.1.0"
-	MIBifDescr      = "1.3.6.1.2.1.2.2.1.2"
-	MIBifOperStatus = "1.3.6.1.2.1.2.2.1.8"
-)
+func (s *SNMP) Close() error {
+	return s.handler.Conn.Close()
+}
 
-func GetInterfaceNumber() (uint64, error) {
-	result, err := Default.Get([]string{MIBifNumber})
+func (s *SNMP) GetInterfaceNumber() (uint64, error) {
+	result, err := s.handler.Get([]string{MIBifNumber})
 	if err != nil {
 		return 0, err
 	}
@@ -47,9 +58,9 @@ func GetInterfaceNumber() (uint64, error) {
 	}
 }
 
-func BulkWalkGetInterfaceName(length uint64) (map[uint64]string, error) {
+func (s *SNMP) BulkWalkGetInterfaceName(length uint64) (map[uint64]string, error) {
 	kv := make(map[uint64]string, length)
-	err := Default.BulkWalk(MIBifDescr, func(pdu gosnmp.SnmpPDU) error {
+	err := s.handler.BulkWalk(MIBifDescr, func(pdu gosnmp.SnmpPDU) error {
 		index, err := captureIfIndex(MIBifDescr, pdu.Name)
 		if err != nil {
 			return err
@@ -68,9 +79,9 @@ func BulkWalkGetInterfaceName(length uint64) (map[uint64]string, error) {
 	return kv, nil
 }
 
-func BulkWalkGetInterfaceState(length uint64) (map[uint64]bool, error) {
+func (s *SNMP) BulkWalkGetInterfaceState(length uint64) (map[uint64]bool, error) {
 	kv := make(map[uint64]bool, length)
-	err := Default.BulkWalk(MIBifOperStatus, func(pdu gosnmp.SnmpPDU) error {
+	err := s.handler.BulkWalk(MIBifOperStatus, func(pdu gosnmp.SnmpPDU) error {
 		index, err := captureIfIndex(MIBifOperStatus, pdu.Name)
 		if err != nil {
 			return err
@@ -94,9 +105,9 @@ func BulkWalkGetInterfaceState(length uint64) (map[uint64]bool, error) {
 	return kv, nil
 }
 
-func BulkWalk(oid string, length uint64) (map[uint64]uint64, error) {
+func (s *SNMP) BulkWalk(oid string, length uint64) (map[uint64]uint64, error) {
 	kv := make(map[uint64]uint64, length)
-	err := Default.BulkWalk(oid, func(pdu gosnmp.SnmpPDU) error {
+	err := s.handler.BulkWalk(oid, func(pdu gosnmp.SnmpPDU) error {
 		index, err := captureIfIndex(oid, pdu.Name)
 		if err != nil {
 			return err

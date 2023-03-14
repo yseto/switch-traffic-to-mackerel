@@ -101,8 +101,6 @@ func main() {
 
 	log.Info("start")
 
-	snmp.Init(ctx, collectParams.target, collectParams.community)
-
 	if apikey == "" {
 		log.SetLevel(logrus.DebugLevel)
 
@@ -116,24 +114,24 @@ func main() {
 }
 
 func collect(ctx context.Context, c *CollectParams) ([]MetricsDutum, error) {
-	err := snmp.Default.Connect()
+	snmpClient, err := snmp.Init(ctx, c.target, c.community)
 	if err != nil {
 		return nil, err
 	}
-	defer snmp.Default.Conn.Close()
+	defer snmpClient.Close()
 
-	ifNumber, err := snmp.GetInterfaceNumber()
+	ifNumber, err := snmpClient.GetInterfaceNumber()
 	if err != nil {
 		return nil, err
 	}
-	ifDescr, err := snmp.BulkWalkGetInterfaceName(ifNumber)
+	ifDescr, err := snmpClient.BulkWalkGetInterfaceName(ifNumber)
 	if err != nil {
 		return nil, err
 	}
 
 	var ifOperStatus map[uint64]bool
 	if *c.skipDownLinkState {
-		ifOperStatus, err = snmp.BulkWalkGetInterfaceState(ifNumber)
+		ifOperStatus, err = snmpClient.BulkWalkGetInterfaceState(ifNumber)
 		if err != nil {
 			return nil, err
 		}
@@ -142,7 +140,7 @@ func collect(ctx context.Context, c *CollectParams) ([]MetricsDutum, error) {
 	metrics := make([]MetricsDutum, 0)
 
 	for _, mibName := range c.mibs {
-		values, err := snmp.BulkWalk(mib.Oidmapping[mibName], ifNumber)
+		values, err := snmpClient.BulkWalk(mib.Oidmapping[mibName], ifNumber)
 		if err != nil {
 			return nil, err
 		}

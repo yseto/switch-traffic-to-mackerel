@@ -10,12 +10,12 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/gosnmp/gosnmp"
 	"github.com/sirupsen/logrus"
 
 	"github.com/yseto/switch-traffic-to-mackerel/mib"
+	"github.com/yseto/switch-traffic-to-mackerel/snmp"
 )
 
 const (
@@ -110,10 +110,7 @@ func main() {
 
 	log.Info("start")
 
-	gosnmp.Default.Target = collectParams.target
-	gosnmp.Default.Community = collectParams.community
-	gosnmp.Default.Timeout = time.Duration(10 * time.Second)
-	gosnmp.Default.Context = ctx
+	snmp.Init(ctx, collectParams.target, collectParams.community)
 
 	if apikey == "" {
 		log.SetLevel(logrus.DebugLevel)
@@ -128,11 +125,11 @@ func main() {
 }
 
 func collect(ctx context.Context, c *CollectParams) ([]MetricsDutum, error) {
-	err := gosnmp.Default.Connect()
+	err := snmp.Default.Connect()
 	if err != nil {
 		return nil, err
 	}
-	defer gosnmp.Default.Conn.Close()
+	defer snmp.Default.Conn.Close()
 
 	ifNumber, err := getInterfaceNumber()
 	if err != nil {
@@ -193,7 +190,7 @@ func captureIfIndex(oid, name string) (uint64, error) {
 }
 
 func getInterfaceNumber() (uint64, error) {
-	result, err := gosnmp.Default.Get([]string{MIBifNumber})
+	result, err := snmp.Default.Get([]string{MIBifNumber})
 	if err != nil {
 		return 0, err
 	}
@@ -208,7 +205,7 @@ func getInterfaceNumber() (uint64, error) {
 
 func bulkWalkGetInterfaceName(length uint64) (map[uint64]string, error) {
 	kv := make(map[uint64]string, length)
-	err := gosnmp.Default.BulkWalk(MIBifDescr, func(pdu gosnmp.SnmpPDU) error {
+	err := snmp.Default.BulkWalk(MIBifDescr, func(pdu gosnmp.SnmpPDU) error {
 		index, err := captureIfIndex(MIBifDescr, pdu.Name)
 		if err != nil {
 			return err
@@ -229,7 +226,7 @@ func bulkWalkGetInterfaceName(length uint64) (map[uint64]string, error) {
 
 func bulkWalkGetInterfaceState(length uint64) (map[uint64]bool, error) {
 	kv := make(map[uint64]bool, length)
-	err := gosnmp.Default.BulkWalk(MIBifOperStatus, func(pdu gosnmp.SnmpPDU) error {
+	err := snmp.Default.BulkWalk(MIBifOperStatus, func(pdu gosnmp.SnmpPDU) error {
 		index, err := captureIfIndex(MIBifOperStatus, pdu.Name)
 		if err != nil {
 			return err
@@ -255,7 +252,7 @@ func bulkWalkGetInterfaceState(length uint64) (map[uint64]bool, error) {
 
 func bulkWalk(oid string, length uint64) (map[uint64]uint64, error) {
 	kv := make(map[uint64]uint64, length)
-	err := gosnmp.Default.BulkWalk(oid, func(pdu gosnmp.SnmpPDU) error {
+	err := snmp.Default.BulkWalk(oid, func(pdu gosnmp.SnmpPDU) error {
 		index, err := captureIfIndex(oid, pdu.Name)
 		if err != nil {
 			return err

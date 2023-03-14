@@ -11,12 +11,14 @@ import (
 	"time"
 
 	mackerel "github.com/mackerelio/mackerel-client-go"
+
+	"github.com/yseto/switch-traffic-to-mackerel/collector"
 	"github.com/yseto/switch-traffic-to-mackerel/config"
 )
 
 var buffers = list.New()
 var mutex = &sync.Mutex{}
-var snapshot []MetricsDutum
+var snapshot []collector.MetricsDutum
 
 var graphDefs = []*mackerel.GraphDefsParam{
 	&mackerel.GraphDefsParam{
@@ -98,7 +100,7 @@ func runMackerel(ctx context.Context, collectParams *config.Collector) {
 		log.Fatal(err)
 	}
 
-	snapshot, err = collect(ctx, collectParams)
+	snapshot, err = collector.Do(ctx, collectParams)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -194,7 +196,7 @@ func calcurateDiff(a, b, overflow uint64) uint64 {
 }
 
 func innerTicker(ctx context.Context, hostId *string, collectParams *config.Collector) error {
-	rawMetrics, err := collect(ctx, collectParams)
+	rawMetrics, err := collector.Do(ctx, collectParams)
 	if err != nil {
 		return err
 	}

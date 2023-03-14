@@ -45,7 +45,6 @@ var apikey = os.Getenv("MACKEREL_API_KEY")
 func parseFlags() (*CollectParams, error) {
 	var community, target, name string
 	var includeInterface, excludeInterface *string
-	level := flag.Bool("verbose", false, "verbose")
 	var configFilename string
 	flag.StringVar(&configFilename, "config", "config.yaml", "config `filename`")
 	flag.Parse()
@@ -73,12 +72,6 @@ func parseFlags() (*CollectParams, error) {
 		includeInterface = t.Interface.Include
 		excludeInterface = t.Interface.Exclude
 	}
-
-	logLevel := logrus.WarnLevel
-	if *level {
-		logLevel = logrus.DebugLevel
-	}
-	log.SetLevel(logLevel)
 
 	name = t.Name
 	if name == "" {
@@ -138,8 +131,6 @@ func main() {
 	log.Info("start")
 
 	if apikey == "" {
-		log.SetLevel(logrus.DebugLevel)
-
 		dutum, err := collect(ctx, collectParams)
 		if err != nil {
 			log.Fatal(err)
@@ -202,13 +193,6 @@ func collect(ctx context.Context, c *CollectParams) ([]MetricsDutum, error) {
 			if c.skipDownLinkState && !ifOperStatus[ifIndex] {
 				continue
 			}
-
-			log.WithFields(logrus.Fields{
-				"IfIndex": ifIndex,
-				"Mib":     mibName,
-				"IfName":  ifName,
-				"Value":   value,
-			}).Debug()
 
 			metrics = append(metrics, MetricsDutum{IfIndex: ifIndex, Mib: mibName, IfName: ifName, Value: value})
 		}

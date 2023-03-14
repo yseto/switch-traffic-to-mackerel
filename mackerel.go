@@ -4,6 +4,7 @@ import (
 	"container/list"
 	"context"
 	"fmt"
+	"log"
 	"math"
 	"os"
 	"strings"
@@ -116,7 +117,7 @@ func runMackerel(ctx context.Context, collectParams *config.Collector) {
 }
 
 func initialForMackerel(c *config.Collector, client *mackerel.Client) (*string, error) {
-	log.Info("init for mackerel")
+	log.Println("init for mackerel")
 
 	idPath, err := c.HostIdPath()
 	if err != nil {
@@ -174,10 +175,10 @@ func ticker(ctx context.Context, wg *sync.WaitGroup, hostId *string, collectPara
 		case <-t.C:
 			err := innerTicker(ctx, hostId, collectParams)
 			if err != nil {
-				log.Warn(err)
+				log.Println(err.Error())
 			}
 		case <-ctx.Done():
-			log.Warn("cancellation from context:", ctx.Err())
+			log.Println("cancellation from context:", ctx.Err())
 			return
 		}
 	}
@@ -259,7 +260,7 @@ func sendTicker(ctx context.Context, wg *sync.WaitGroup, client *mackerel.Client
 			sendToMackerel(ctx, client, hostId)
 
 		case <-ctx.Done():
-			log.Warn("cancellation from context:", ctx.Err())
+			log.Println("cancellation from context:", ctx.Err())
 			return
 		}
 	}
@@ -276,10 +277,10 @@ func sendToMackerel(ctx context.Context, client *mackerel.Client, hostId *string
 
 	err := client.PostHostMetricValuesByHostID(*hostId, e.Value.([](*mackerel.MetricValue)))
 	if err != nil {
-		log.Warn(err)
+		log.Println(err)
 		return
 	} else {
-		log.Info("success")
+		log.Println("success")
 	}
 	mutex.Lock()
 	buffers.Remove(e)

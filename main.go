@@ -32,6 +32,11 @@ func main() {
 	collectParams.Debug = (collectParams.Debug || debug)
 	collectParams.DryRun = (collectParams.DryRun || dryrun)
 
+	if collectParams.Mackerel == nil {
+		log.Println("force dry-run.")
+		collectParams.DryRun = true
+	}
+
 	err = run(ctx, collectParams)
 	if err != nil {
 		log.Fatal(err)
@@ -44,13 +49,17 @@ func run(ctx context.Context, collectParams *config.Config) error {
 		return err
 	}
 
-	// TODO collectParams.Mackerel == nil
-	queue := mckr.NewQueue(
-		collectParams.Mackerel.ApiKey,
-		collectParams.Mackerel.HostID,
-		collectParams.Target,
-		collectParams.Name,
-		snapshot)
+	qa := &mckr.QueueArg{
+		TargetAddr: collectParams.Target,
+		Name:       collectParams.Name,
+		Snapshot:   snapshot,
+	}
+	if collectParams.Mackerel != nil {
+		qa.Apikey = collectParams.Mackerel.ApiKey
+		qa.HostID = collectParams.Mackerel.HostID
+	}
+
+	queue := mckr.NewQueue(qa)
 
 	wg := &sync.WaitGroup{}
 

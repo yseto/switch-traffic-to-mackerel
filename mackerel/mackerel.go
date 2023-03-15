@@ -31,16 +31,24 @@ type Queue struct {
 	name       string
 }
 
-func NewQueue(apikey, hostID, targetAddr, name string, snapshot []collector.MetricsDutum) *Queue {
-	client := mackerel.NewClient(apikey)
+type QueueArg struct {
+	Apikey     string
+	HostID     string
+	TargetAddr string
+	Name       string
+	Snapshot   []collector.MetricsDutum
+}
+
+func NewQueue(qa *QueueArg) *Queue {
+	client := mackerel.NewClient(qa.Apikey)
 
 	return &Queue{
 		buffers:    list.New(),
 		client:     client,
-		Snapshot:   snapshot,
-		hostID:     hostID,
-		targetAddr: targetAddr,
-		name:       name,
+		Snapshot:   qa.Snapshot,
+		hostID:     qa.HostID,
+		targetAddr: qa.TargetAddr,
+		name:       qa.Name,
 	}
 }
 

@@ -29,20 +29,17 @@ type Queue struct {
 	client   MackerelClient
 }
 
-func NewQueue(apikey string) *Queue {
+func NewQueue(apikey string, snapshot []collector.MetricsDutum) *Queue {
 	client := mackerel.NewClient(apikey)
 
 	return &Queue{
-		buffers: list.New(),
-		client:  client,
+		buffers:  list.New(),
+		client:   client,
+		Snapshot: snapshot,
 	}
 }
 
-var buffers = list.New()
-var mutex = &sync.Mutex{}
-var Snapshot []collector.MetricsDutum
-
-func InitialForMackerel(c *config.Config, client *mackerel.Client) (*string, error) {
+func (q *Queue) InitialForMackerel(c *config.Config) (*string, error) {
 	log.Println("init for mackerel")
 
 	idPath, err := c.HostIdPath()
@@ -62,7 +59,7 @@ func InitialForMackerel(c *config.Config, client *mackerel.Client) (*string, err
 			return nil, err
 		}
 		hostId = string(bytes)
-		_, err = client.UpdateHost(hostId, &mackerel.UpdateHostParam{
+		_, err = q.client.UpdateHost(hostId, &mackerel.UpdateHostParam{
 			Name:       c.Name,
 			Interfaces: interfaces,
 		})
@@ -70,7 +67,7 @@ func InitialForMackerel(c *config.Config, client *mackerel.Client) (*string, err
 			return nil, err
 		}
 	} else {
-		hostId, err = client.CreateHost(&mackerel.CreateHostParam{
+		hostId, err = q.client.CreateHost(&mackerel.CreateHostParam{
 			Name:       c.Name,
 			Interfaces: interfaces,
 		})
@@ -82,14 +79,14 @@ func InitialForMackerel(c *config.Config, client *mackerel.Client) (*string, err
 			return nil, err
 		}
 	}
-	err = client.CreateGraphDefs(GraphDefs)
+	err = q.client.CreateGraphDefs(GraphDefs)
 	if err != nil {
 		return nil, err
 	}
 	return &hostId, nil
 }
 
-func SendTicker(ctx context.Context, wg *sync.WaitGroup, client *mackerel.Client, hostId *string) {
+func (q *Queue) SendTicker(ctx context.Context, wg *sync.WaitGroup, hostId *string) {
 	t := time.NewTicker(500 * time.Millisecond)
 
 	defer func() {
@@ -100,7 +97,7 @@ func SendTicker(ctx context.Context, wg *sync.WaitGroup, client *mackerel.Client
 	for {
 		select {
 		case <-t.C:
-			sendToMackerel(ctx, client, hostId)
+			q.sendToMackerel(ctx, hostId)
 
 		case <-ctx.Done():
 			log.Println("cancellation from context:", ctx.Err())
@@ -109,23 +106,23 @@ func SendTicker(ctx context.Context, wg *sync.WaitGroup, client *mackerel.Client
 	}
 }
 
-func sendToMackerel(ctx context.Context, client *mackerel.Client, hostId *string) {
-	if buffers.Len() == 0 {
+func (q *Queue) sendToMackerel(ctx context.Context, hostId *string) {
+	if q.buffers.Len() == 0 {
 		return
 	}
 
-	e := buffers.Front()
+	e := q.buffers.Front()
 	// log.Infof("send current value: %#v", e.Value)
 	// log.Infof("buffers len: %d", buffers.Len())
 
-	err := client.PostHostMetricValuesByHostID(*hostId, e.Value.([](*mackerel.MetricValue)))
+	err := q.client.PostHostMetricValuesByHostID(*hostId, e.Value.([](*mackerel.MetricValue)))
 	if err != nil {
 		log.Println(err)
 		return
 	} else {
 		log.Println("success")
 	}
-	mutex.Lock()
-	buffers.Remove(e)
-	mutex.Unlock()
+	q.Lock()
+	q.buffers.Remove(e)
+	q.Unlock()
 }

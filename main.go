@@ -9,7 +9,6 @@ import (
 	"sync"
 	"time"
 
-	mackerel "github.com/mackerelio/mackerel-client-go"
 	"github.com/yseto/switch-traffic-to-mackerel/collector"
 	"github.com/yseto/switch-traffic-to-mackerel/config"
 	mckr "github.com/yseto/switch-traffic-to-mackerel/mackerel"
@@ -40,37 +39,36 @@ func main() {
 }
 
 func run(ctx context.Context, collectParams *config.Config) error {
-	var err error
-	mckr.Snapshot, err = collector.Do(ctx, collectParams)
+	snapshot, err := collector.Do(ctx, collectParams)
 	if err != nil {
 		return err
 	}
 
+	queue := mckr.NewQueue(collectParams.Mackerel.ApiKey, snapshot)
+
 	wg := sync.WaitGroup{}
 
 	wg.Add(1)
-	go ticker(ctx, &wg, collectParams)
+	go ticker(ctx, &wg, collectParams, queue)
 
 	if collectParams.DryRun {
 		wg.Wait()
 		return nil
 	}
 
-	client := mackerel.NewClient(collectParams.Mackerel.ApiKey)
-
-	hostId, err := mckr.InitialForMackerel(collectParams, client)
+	hostId, err := queue.InitialForMackerel(collectParams)
 	if err != nil {
 		return err
 	}
 
 	wg.Add(1)
-	go mckr.SendTicker(ctx, &wg, client, hostId)
+	go queue.SendTicker(ctx, &wg, hostId)
 	wg.Wait()
 
 	return nil
 }
 
-func ticker(ctx context.Context, wg *sync.WaitGroup, collectParams *config.Config) {
+func ticker(ctx context.Context, wg *sync.WaitGroup, collectParams *config.Config, queue *mckr.Queue) {
 	t := time.NewTicker(1 * time.Minute)
 	defer func() {
 		t.Stop()
@@ -85,7 +83,7 @@ func ticker(ctx context.Context, wg *sync.WaitGroup, collectParams *config.Confi
 				log.Println(err.Error())
 			}
 			if !collectParams.DryRun {
-				mckr.Enqueue(rawMetrics)
+				queue.Enqueue(rawMetrics)
 			}
 		case <-ctx.Done():
 			log.Println("cancellation from context:", ctx.Err())

@@ -46,9 +46,9 @@ func calcurateDiff(a, b, overflow uint64) uint64 {
 		return b - a
 	}
 }
-func Enqueue(rawMetrics []collector.MetricsDutum) {
-	prevSnapshot := Snapshot
-	Snapshot = rawMetrics
+func (q *Queue) Enqueue(rawMetrics []collector.MetricsDutum) {
+	prevSnapshot := q.Snapshot
+	q.Snapshot = rawMetrics
 
 	now := time.Now().Unix()
 
@@ -83,7 +83,7 @@ func Enqueue(rawMetrics []collector.MetricsDutum) {
 		})
 	}
 
-	mutex.Lock()
-	buffers.PushBack(metrics)
-	mutex.Unlock()
+	q.Lock()
+	q.buffers.PushBack(metrics)
+	q.Unlock()
 }

@@ -16,9 +16,9 @@ import (
 
 var buffers = list.New()
 var mutex = &sync.Mutex{}
-var snapshot []collector.MetricsDutum
+var Snapshot []collector.MetricsDutum
 
-func initialForMackerel(c *config.Config, client *mackerel.Client) (*string, error) {
+func InitialForMackerel(c *config.Config, client *mackerel.Client) (*string, error) {
 	log.Println("init for mackerel")
 
 	idPath, err := c.HostIdPath()
@@ -65,7 +65,7 @@ func initialForMackerel(c *config.Config, client *mackerel.Client) (*string, err
 	return &hostId, nil
 }
 
-func sendTicker(ctx context.Context, wg *sync.WaitGroup, client *mackerel.Client, hostId *string) {
+func SendTicker(ctx context.Context, wg *sync.WaitGroup, client *mackerel.Client, hostId *string) {
 	t := time.NewTicker(500 * time.Millisecond)
 
 	defer func() {

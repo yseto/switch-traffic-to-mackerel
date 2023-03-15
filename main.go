@@ -12,6 +12,7 @@ import (
 	mackerel "github.com/mackerelio/mackerel-client-go"
 	"github.com/yseto/switch-traffic-to-mackerel/collector"
 	"github.com/yseto/switch-traffic-to-mackerel/config"
+	mckr "github.com/yseto/switch-traffic-to-mackerel/mackerel"
 )
 
 func main() {
@@ -40,7 +41,7 @@ func main() {
 
 func run(ctx context.Context, collectParams *config.Config) error {
 	var err error
-	snapshot, err = collector.Do(ctx, collectParams)
+	mckr.Snapshot, err = collector.Do(ctx, collectParams)
 	if err != nil {
 		return err
 	}
@@ -57,13 +58,13 @@ func run(ctx context.Context, collectParams *config.Config) error {
 
 	client := mackerel.NewClient(collectParams.Mackerel.ApiKey)
 
-	hostId, err := initialForMackerel(collectParams, client)
+	hostId, err := mckr.InitialForMackerel(collectParams, client)
 	if err != nil {
 		return err
 	}
 
 	wg.Add(1)
-	go sendTicker(ctx, &wg, client, hostId)
+	go mckr.SendTicker(ctx, &wg, client, hostId)
 	wg.Wait()
 
 	return nil
@@ -84,7 +85,7 @@ func ticker(ctx context.Context, wg *sync.WaitGroup, collectParams *config.Confi
 				log.Println(err.Error())
 			}
 			if !collectParams.DryRun {
-				Enqueue(rawMetrics)
+				mckr.Enqueue(rawMetrics)
 			}
 		case <-ctx.Done():
 			log.Println("cancellation from context:", ctx.Err())

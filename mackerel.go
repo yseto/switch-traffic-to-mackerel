@@ -94,30 +94,6 @@ func initialForMackerel(c *config.Config, client *mackerel.Client) (*string, err
 	return &hostId, nil
 }
 
-func ticker(ctx context.Context, wg *sync.WaitGroup, collectParams *config.Config) {
-	t := time.NewTicker(1 * time.Minute)
-	defer func() {
-		t.Stop()
-		wg.Done()
-	}()
-
-	for {
-		select {
-		case <-t.C:
-			rawMetrics, err := collector.Do(ctx, collectParams)
-			if err != nil {
-				log.Println(err.Error())
-			}
-			if !collectParams.DryRun {
-				Enqueue(rawMetrics)
-			}
-		case <-ctx.Done():
-			log.Println("cancellation from context:", ctx.Err())
-			return
-		}
-	}
-}
-
 func escapeInterfaceName(ifName string) string {
 	return strings.Replace(strings.Replace(strings.Replace(ifName, "/", "-", -1), ".", "_", -1), " ", "", -1)
 }

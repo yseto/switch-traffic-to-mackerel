@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"sync"
+	"time"
 
 	mackerel "github.com/mackerelio/mackerel-client-go"
 	"github.com/yseto/switch-traffic-to-mackerel/collector"
@@ -66,4 +67,28 @@ func run(ctx context.Context, collectParams *config.Config) error {
 	wg.Wait()
 
 	return nil
+}
+
+func ticker(ctx context.Context, wg *sync.WaitGroup, collectParams *config.Config) {
+	t := time.NewTicker(1 * time.Minute)
+	defer func() {
+		t.Stop()
+		wg.Done()
+	}()
+
+	for {
+		select {
+		case <-t.C:
+			rawMetrics, err := collector.Do(ctx, collectParams)
+			if err != nil {
+				log.Println(err.Error())
+			}
+			if !collectParams.DryRun {
+				Enqueue(rawMetrics)
+			}
+		case <-ctx.Done():
+			log.Println("cancellation from context:", ctx.Err())
+			return
+		}
+	}
 }

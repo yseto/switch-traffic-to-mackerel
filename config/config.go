@@ -22,6 +22,7 @@ type YAMLConfig struct {
 	Name         string     `yaml:"name"`
 	Mackerel     *Mackerel  `yaml:"mackerel"`
 	Debug        bool       `yaml:"debug"`
+	DryRun       bool       `yaml:"dry-run"`
 }
 
 type Interface struct {
@@ -43,6 +44,7 @@ type Config struct {
 	ExcludeRegexp     *regexp.Regexp
 	SkipDownLinkState bool
 	Debug             bool
+	DryRun            bool
 	Mackerel          *Mackerel
 }
 
@@ -84,6 +86,7 @@ func Init(filename string) (*Config, error) {
 		SkipDownLinkState: t.SkipLinkdown,
 		Name:              name,
 		Debug:             t.Debug,
+		DryRun:            t.DryRun,
 	}
 
 	if t.Interface != nil {

@@ -16,9 +16,10 @@ func main() {
 	defer stop()
 
 	var filename string
-	var debug bool
+	var debug, dryrun bool
 	flag.StringVar(&filename, "config", "config.yaml", "config `filename`")
 	flag.BoolVar(&debug, "debug", false, "debug")
+	flag.BoolVar(&dryrun, "dry-run", false, "dry run")
 	flag.Parse()
 
 	collectParams, err := config.Init(filename)
@@ -26,6 +27,7 @@ func main() {
 		log.Fatal(err)
 	}
 	collectParams.Debug = (collectParams.Debug || debug)
+	collectParams.DryRun = (collectParams.DryRun || dryrun)
 
 	log.Println("start")
 

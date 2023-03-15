@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"regexp"
 
 	"gopkg.in/yaml.v3"
@@ -46,14 +45,6 @@ type Config struct {
 	Debug             bool
 	DryRun            bool
 	Mackerel          *Mackerel
-}
-
-func (c *Config) HostIdPath() (string, error) {
-	wd, err := os.Getwd()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(wd, fmt.Sprintf("%s.id.txt", c.Target)), nil
 }
 
 func Init(filename string) (*Config, error) {

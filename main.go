@@ -25,65 +25,56 @@ func main() {
 	flag.BoolVar(&dryrun, "dry-run", false, "dry run")
 	flag.Parse()
 
-	collectParams, err := config.Init(filename)
+	c, err := config.Init(filename)
 	if err != nil {
 		log.Fatal(err)
 	}
-	collectParams.Debug = (collectParams.Debug || debug)
-	collectParams.DryRun = (collectParams.DryRun || dryrun)
+	c.Debug = (c.Debug || debug)
+	c.DryRun = (c.DryRun || dryrun)
 
-	if collectParams.Mackerel == nil {
+	if c.Mackerel == nil {
 		log.Println("force dry-run.")
-		collectParams.DryRun = true
+		c.DryRun = true
 	}
 
-	err = run(ctx, collectParams)
+	snapshot, err := collector.Do(ctx, c)
 	if err != nil {
 		log.Fatal(err)
-	}
-}
-
-func run(ctx context.Context, collectParams *config.Config) error {
-	snapshot, err := collector.Do(ctx, collectParams)
-	if err != nil {
-		return err
 	}
 
 	qa := &mckr.QueueArg{
-		TargetAddr: collectParams.Target,
-		Name:       collectParams.Name,
+		TargetAddr: c.Target,
+		Name:       c.Name,
 		Snapshot:   snapshot,
 	}
-	if collectParams.Mackerel != nil {
-		qa.Apikey = collectParams.Mackerel.ApiKey
-		qa.HostID = collectParams.Mackerel.HostID
+	if c.Mackerel != nil {
+		qa.Apikey = c.Mackerel.ApiKey
+		qa.HostID = c.Mackerel.HostID
 	}
-
 	queue := mckr.NewQueue(qa)
 
 	wg := &sync.WaitGroup{}
-
 	wg.Add(1)
-	go ticker(ctx, wg, collectParams, queue)
+	go ticker(ctx, wg, c, queue)
 
-	if collectParams.DryRun {
+	if c.DryRun {
 		wg.Wait()
-		return nil
+		return
 	}
 
 	newHostID, err := queue.InitialForMackerel()
 	if err != nil {
-		return err
+		log.Fatal(err)
 	}
 	if newHostID != nil {
-		collectParams.Save(*newHostID)
+		if err = c.Save(*newHostID); err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	wg.Add(1)
 	go queue.SendTicker(ctx, wg)
 	wg.Wait()
-
-	return nil
 }
 
 func ticker(ctx context.Context, wg *sync.WaitGroup, collectParams *config.Config, queue *mckr.Queue) {

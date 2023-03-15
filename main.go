@@ -6,7 +6,9 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"sync"
 
+	mackerel "github.com/mackerelio/mackerel-client-go"
 	"github.com/yseto/switch-traffic-to-mackerel/collector"
 	"github.com/yseto/switch-traffic-to-mackerel/config"
 )
@@ -29,17 +31,39 @@ func main() {
 	collectParams.Debug = (collectParams.Debug || debug)
 	collectParams.DryRun = (collectParams.DryRun || dryrun)
 
-	log.Println("start")
-
-	if collectParams.Mackerel == nil {
-		_, err := collector.Do(ctx, collectParams)
-		if err != nil {
-			log.Fatal(err)
-		}
-	} else {
-		err = runMackerel(ctx, collectParams)
-		if err != nil {
-			log.Fatal(err)
-		}
+	err = run(ctx, collectParams)
+	if err != nil {
+		log.Fatal(err)
 	}
+}
+
+func run(ctx context.Context, collectParams *config.Config) error {
+	var err error
+	snapshot, err = collector.Do(ctx, collectParams)
+	if err != nil {
+		return err
+	}
+
+	wg := sync.WaitGroup{}
+
+	wg.Add(1)
+	go ticker(ctx, &wg, collectParams)
+
+	if collectParams.DryRun {
+		wg.Wait()
+		return nil
+	}
+
+	client := mackerel.NewClient(collectParams.Mackerel.ApiKey)
+
+	hostId, err := initialForMackerel(collectParams, client)
+	if err != nil {
+		return err
+	}
+
+	wg.Add(1)
+	go sendTicker(ctx, &wg, client, hostId)
+	wg.Wait()
+
+	return nil
 }

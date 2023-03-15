@@ -4,14 +4,12 @@ import (
 	"container/list"
 	"context"
 	"log"
-	"os"
 	"sync"
 	"time"
 
 	mackerel "github.com/mackerelio/mackerel-client-go"
 
 	"github.com/yseto/switch-traffic-to-mackerel/collector"
-	"github.com/yseto/switch-traffic-to-mackerel/config"
 )
 
 type MackerelClient interface {
@@ -46,51 +44,39 @@ func NewQueue(apikey, hostID, targetAddr, name string, snapshot []collector.Metr
 	}
 }
 
-func (q *Queue) InitialForMackerel(c *config.Config) (*string, error) {
+func (q *Queue) InitialForMackerel() (*string, error) {
 	log.Println("init for mackerel")
 
-	idPath, err := c.HostIdPath()
-	if err != nil {
-		return nil, err
-	}
 	interfaces := []mackerel.Interface{
 		{
 			Name:          "main",
-			IPv4Addresses: []string{c.Target},
+			IPv4Addresses: []string{q.targetAddr},
 		},
 	}
-	var hostId string
-	if _, err := os.Stat(idPath); err == nil {
-		bytes, err := os.ReadFile(idPath)
-		if err != nil {
-			return nil, err
-		}
-		hostId = string(bytes)
-		_, err = q.client.UpdateHost(hostId, &mackerel.UpdateHostParam{
-			Name:       c.Name,
+
+	var newHostID *string
+	var err error
+	if q.hostID != "" {
+		_, err = q.client.UpdateHost(q.hostID, &mackerel.UpdateHostParam{
+			Name:       q.name,
 			Interfaces: interfaces,
 		})
-		if err != nil {
-			return nil, err
-		}
 	} else {
-		hostId, err = q.client.CreateHost(&mackerel.CreateHostParam{
-			Name:       c.Name,
+		q.hostID, err = q.client.CreateHost(&mackerel.CreateHostParam{
+			Name:       q.name,
 			Interfaces: interfaces,
 		})
-		if err != nil {
-			return nil, err
-		}
-		err = os.WriteFile(idPath, []byte(hostId), 0666)
-		if err != nil {
-			return nil, err
-		}
+		newHostID = &q.hostID
 	}
+	if err != nil {
+		return nil, err
+	}
+
 	err = q.client.CreateGraphDefs(GraphDefs)
 	if err != nil {
 		return nil, err
 	}
-	return &hostId, nil
+	return newHostID, nil
 }
 
 func (q *Queue) SendTicker(ctx context.Context, wg *sync.WaitGroup, hostId *string) {

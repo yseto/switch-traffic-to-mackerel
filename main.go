@@ -52,10 +52,10 @@ func run(ctx context.Context, collectParams *config.Config) error {
 		collectParams.Name,
 		snapshot)
 
-	wg := sync.WaitGroup{}
+	wg := &sync.WaitGroup{}
 
 	wg.Add(1)
-	go ticker(ctx, &wg, collectParams, queue)
+	go ticker(ctx, wg, collectParams, queue)
 
 	if collectParams.DryRun {
 		wg.Wait()
@@ -71,7 +71,7 @@ func run(ctx context.Context, collectParams *config.Config) error {
 	}
 
 	wg.Add(1)
-	go queue.SendTicker(ctx, &wg)
+	go queue.SendTicker(ctx, wg)
 	wg.Wait()
 
 	return nil

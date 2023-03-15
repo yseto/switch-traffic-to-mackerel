@@ -133,6 +133,10 @@ func innerTicker(ctx context.Context, collectParams *config.Config) error {
 		return err
 	}
 
+	if collectParams.DryRun {
+		return nil
+	}
+
 	prevSnapshot := snapshot
 	snapshot = rawMetrics
 

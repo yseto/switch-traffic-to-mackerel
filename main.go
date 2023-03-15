@@ -66,6 +66,9 @@ func run(ctx context.Context, collectParams *config.Config) error {
 	if err != nil {
 		return err
 	}
+	if newHostID != nil {
+		collectParams.Save(*newHostID)
+	}
 
 	wg.Add(1)
 	go queue.SendTicker(ctx, &wg)

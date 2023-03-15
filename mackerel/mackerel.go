@@ -44,6 +44,7 @@ func NewQueue(apikey, hostID, targetAddr, name string, snapshot []collector.Metr
 	}
 }
 
+// return host ID when create.
 func (q *Queue) InitialForMackerel() (*string, error) {
 	log.Println("init for mackerel")
 

@@ -44,12 +44,15 @@ func main() {
 
 	qa := &mackerel.QueueArg{
 		TargetAddr: c.Target,
-		Name:       c.Name,
 		Snapshot:   snapshot,
 	}
 	if c.Mackerel != nil {
 		qa.Apikey = c.Mackerel.ApiKey
 		qa.HostID = c.Mackerel.HostID
+		qa.Name = c.Mackerel.Name
+		if qa.Name == "" {
+			qa.Name = c.Target
+		}
 	}
 	queue := mackerel.NewQueue(qa)
 

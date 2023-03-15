@@ -7,7 +7,7 @@ mibs: # capture mib name
     - ifHCInOctets
     - ifHCOutOctets
 skip-linkdown: true
-name: "" # display Name on Mackerel
 mackerel:
     x-api-key: xxxxx
     host-id: xxxxx
+    name: "" # display Name on Mackerel

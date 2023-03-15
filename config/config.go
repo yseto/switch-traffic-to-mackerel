@@ -15,10 +15,9 @@ var loadedFilename string
 type YAMLConfig struct {
 	Community    string     `yaml:"community"`
 	Target       string     `yaml:"target"`
-	Interface    *Interface `yaml:"interface"`
+	Interface    *Interface `yaml:"interface,omitempty"`
 	Mibs         []string   `yaml:"mibs,omitempty"`
 	SkipLinkdown bool       `yaml:"skip-linkdown,omitempty"`
-	Name         string     `yaml:"name"`
 	Mackerel     *Mackerel  `yaml:"mackerel,omitempty"`
 	Debug        bool       `yaml:"debug,omitempty"`
 	DryRun       bool       `yaml:"dry-run,omitempty"`
@@ -32,12 +31,12 @@ type Interface struct {
 type Mackerel struct {
 	HostID string `yaml:"host-id"`
 	ApiKey string `yaml:"x-api-key"`
+	Name   string `yaml:"name,omitempty"`
 }
 
 type Config struct {
 	Community         string
 	Target            string
-	Name              string
 	MIBs              []string
 	IncludeRegexp     *regexp.Regexp
 	ExcludeRegexp     *regexp.Regexp
@@ -66,16 +65,10 @@ func Init(filename string) (*Config, error) {
 		return nil, fmt.Errorf("target is needed.")
 	}
 
-	name := t.Name
-	if name == "" {
-		name = t.Target
-	}
-
 	c := &Config{
 		Target:            t.Target,
 		Community:         t.Community,
 		SkipDownLinkState: t.SkipLinkdown,
-		Name:              name,
 		Debug:             t.Debug,
 		DryRun:            t.DryRun,
 	}

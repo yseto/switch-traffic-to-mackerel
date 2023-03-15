@@ -13,7 +13,7 @@ import (
 	"github.com/yseto/switch-traffic-to-mackerel/snmp"
 )
 
-func Do(ctx context.Context, c *config.Collector) ([]MetricsDutum, error) {
+func Do(ctx context.Context, c *config.Config) ([]MetricsDutum, error) {
 	snmpClient, err := snmp.Init(ctx, c.Target, c.Community)
 	if err != nil {
 		return nil, err

@@ -13,7 +13,7 @@ import (
 
 var loadedFilename string
 
-type Config struct {
+type YAMLConfig struct {
 	Community    string     `yaml:"community"`
 	Target       string     `yaml:"target"`
 	Interface    *Interface `yaml:"interface"`
@@ -34,7 +34,7 @@ type Mackerel struct {
 	ApiKey string `yaml:"x-api-key"`
 }
 
-type Collector struct {
+type Config struct {
 	Community         string
 	Target            string
 	Name              string
@@ -46,7 +46,7 @@ type Collector struct {
 	Mackerel          *Mackerel
 }
 
-func (c *Collector) HostIdPath() (string, error) {
+func (c *Config) HostIdPath() (string, error) {
 	wd, err := os.Getwd()
 	if err != nil {
 		return "", err
@@ -54,13 +54,13 @@ func (c *Collector) HostIdPath() (string, error) {
 	return filepath.Join(wd, fmt.Sprintf("%s.id.txt", c.Target)), nil
 }
 
-func Init(filename string) (*Collector, error) {
+func Init(filename string) (*Config, error) {
 	loadedFilename = filename
 	f, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
-	var t Config
+	var t YAMLConfig
 	err = yaml.Unmarshal(f, &t)
 	if err != nil {
 		return nil, err
@@ -78,7 +78,7 @@ func Init(filename string) (*Collector, error) {
 		name = t.Target
 	}
 
-	c := &Collector{
+	c := &Config{
 		Target:            t.Target,
 		Community:         t.Community,
 		SkipDownLinkState: t.SkipLinkdown,

@@ -47,7 +47,7 @@ var deltaValues = map[string]bool{
 	"ifHCOutOctets": true,
 }
 
-func runMackerel(ctx context.Context, collectParams *config.Collector) {
+func runMackerel(ctx context.Context, collectParams *config.Config) {
 	client := mackerel.NewClient(collectParams.Mackerel.ApiKey)
 
 	hostId, err := initialForMackerel(collectParams, client)
@@ -70,7 +70,7 @@ func runMackerel(ctx context.Context, collectParams *config.Collector) {
 	wg.Wait()
 }
 
-func initialForMackerel(c *config.Collector, client *mackerel.Client) (*string, error) {
+func initialForMackerel(c *config.Config, client *mackerel.Client) (*string, error) {
 	log.Println("init for mackerel")
 
 	idPath, err := c.HostIdPath()
@@ -117,7 +117,7 @@ func initialForMackerel(c *config.Collector, client *mackerel.Client) (*string, 
 	return &hostId, nil
 }
 
-func ticker(ctx context.Context, wg *sync.WaitGroup, hostId *string, collectParams *config.Collector) {
+func ticker(ctx context.Context, wg *sync.WaitGroup, hostId *string, collectParams *config.Config) {
 	t := time.NewTicker(1 * time.Minute)
 	defer func() {
 		t.Stop()
@@ -150,7 +150,7 @@ func calcurateDiff(a, b, overflow uint64) uint64 {
 	}
 }
 
-func innerTicker(ctx context.Context, hostId *string, collectParams *config.Collector) error {
+func innerTicker(ctx context.Context, hostId *string, collectParams *config.Config) error {
 	rawMetrics, err := collector.Do(ctx, collectParams)
 	if err != nil {
 		return err

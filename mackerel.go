@@ -63,7 +63,7 @@ func runMackerel(ctx context.Context, collectParams *config.Config) {
 	wg := sync.WaitGroup{}
 
 	wg.Add(1)
-	go ticker(ctx, &wg, hostId, collectParams)
+	go ticker(ctx, &wg, collectParams)
 
 	wg.Add(1)
 	go sendTicker(ctx, &wg, client, hostId)
@@ -117,7 +117,7 @@ func initialForMackerel(c *config.Config, client *mackerel.Client) (*string, err
 	return &hostId, nil
 }
 
-func ticker(ctx context.Context, wg *sync.WaitGroup, hostId *string, collectParams *config.Config) {
+func ticker(ctx context.Context, wg *sync.WaitGroup, collectParams *config.Config) {
 	t := time.NewTicker(1 * time.Minute)
 	defer func() {
 		t.Stop()
@@ -127,7 +127,7 @@ func ticker(ctx context.Context, wg *sync.WaitGroup, hostId *string, collectPara
 	for {
 		select {
 		case <-t.C:
-			err := innerTicker(ctx, hostId, collectParams)
+			err := innerTicker(ctx, collectParams)
 			if err != nil {
 				log.Println(err.Error())
 			}
@@ -150,7 +150,7 @@ func calcurateDiff(a, b, overflow uint64) uint64 {
 	}
 }
 
-func innerTicker(ctx context.Context, hostId *string, collectParams *config.Config) error {
+func innerTicker(ctx context.Context, collectParams *config.Config) error {
 	rawMetrics, err := collector.Do(ctx, collectParams)
 	if err != nil {
 		return err

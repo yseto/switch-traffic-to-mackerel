@@ -79,7 +79,7 @@ func (q *Queue) InitialForMackerel() (*string, error) {
 	return newHostID, nil
 }
 
-func (q *Queue) SendTicker(ctx context.Context, wg *sync.WaitGroup, hostId *string) {
+func (q *Queue) SendTicker(ctx context.Context, wg *sync.WaitGroup) {
 	t := time.NewTicker(500 * time.Millisecond)
 
 	defer func() {
@@ -90,7 +90,7 @@ func (q *Queue) SendTicker(ctx context.Context, wg *sync.WaitGroup, hostId *stri
 	for {
 		select {
 		case <-t.C:
-			q.sendToMackerel(ctx, hostId)
+			q.sendToMackerel(ctx)
 
 		case <-ctx.Done():
 			log.Println("cancellation from context:", ctx.Err())
@@ -99,7 +99,7 @@ func (q *Queue) SendTicker(ctx context.Context, wg *sync.WaitGroup, hostId *stri
 	}
 }
 
-func (q *Queue) sendToMackerel(ctx context.Context, hostId *string) {
+func (q *Queue) sendToMackerel(ctx context.Context) {
 	if q.buffers.Len() == 0 {
 		return
 	}
@@ -108,7 +108,7 @@ func (q *Queue) sendToMackerel(ctx context.Context, hostId *string) {
 	// log.Infof("send current value: %#v", e.Value)
 	// log.Infof("buffers len: %d", buffers.Len())
 
-	err := q.client.PostHostMetricValuesByHostID(*hostId, e.Value.([](*mackerel.MetricValue)))
+	err := q.client.PostHostMetricValuesByHostID(q.hostID, e.Value.([](*mackerel.MetricValue)))
 	if err != nil {
 		log.Println(err)
 		return

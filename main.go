@@ -44,7 +44,13 @@ func run(ctx context.Context, collectParams *config.Config) error {
 		return err
 	}
 
-	queue := mckr.NewQueue(collectParams.Mackerel.ApiKey, snapshot)
+	// TODO collectParams.Mackerel == nil
+	queue := mckr.NewQueue(
+		collectParams.Mackerel.ApiKey,
+		collectParams.Mackerel.HostID,
+		collectParams.Target,
+		collectParams.Name,
+		snapshot)
 
 	wg := sync.WaitGroup{}
 
@@ -56,13 +62,13 @@ func run(ctx context.Context, collectParams *config.Config) error {
 		return nil
 	}
 
-	hostId, err := queue.InitialForMackerel(collectParams)
+	newHostID, err := queue.InitialForMackerel()
 	if err != nil {
 		return err
 	}
 
 	wg.Add(1)
-	go queue.SendTicker(ctx, &wg, hostId)
+	go queue.SendTicker(ctx, &wg)
 	wg.Wait()
 
 	return nil

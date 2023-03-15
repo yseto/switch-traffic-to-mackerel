@@ -1,4 +1,4 @@
-package main
+package mackerel
 
 import (
 	"container/list"
@@ -15,7 +15,6 @@ import (
 
 	"github.com/yseto/switch-traffic-to-mackerel/collector"
 	"github.com/yseto/switch-traffic-to-mackerel/config"
-	mckr "github.com/yseto/switch-traffic-to-mackerel/mackerel"
 )
 
 var buffers = list.New()
@@ -87,7 +86,7 @@ func initialForMackerel(c *config.Config, client *mackerel.Client) (*string, err
 			return nil, err
 		}
 	}
-	err = client.CreateGraphDefs(mckr.GraphDefs)
+	err = client.CreateGraphDefs(GraphDefs)
 	if err != nil {
 		return nil, err
 	}

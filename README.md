@@ -28,15 +28,15 @@ interface: # (オプション)取り込むインターフェイスをインタ�
     include: "" # 取得時に取り込みたいインターフェイス名を正規表現で指定します
     exclude: "" # 取得時に取り込みたくないインターフェイス名を正規表現で指定します
 mibs: # (オプション)取り込みたい情報を設定できます。無指定時は、以下に示されるMIBについての情報が取り込まれます
-	- ifHCInOctets
-	- ifHCOutOctets
-	- ifInDiscards
-	- ifOutDiscards
-	- ifInErrors
-	- ifOutErrors
+    - ifHCInOctets
+    - ifHCOutOctets
+    - ifInDiscards
+    - ifOutDiscards
+    - ifInErrors
+    - ifOutErrors
 # 機器によっては ifHCInOctets、ifHCOutOctets への対応ができない場合があります。その場合は、以下を明示的に指定する必要があります
-#	- ifInOctets
-#	- ifOutOctets
+#   - ifInOctets
+#   - ifOutOctets
 debug: false # (オプション) true時、デバッグ表示を有効にします。取り込むインターフェイス名およびその値を表示します
 dry-run: false # (オプション) true時、mackerel への送信を抑制します。mackerel についての情報が設定ファイルに含まれてない場合は、強制的に true となります。
 skip-linkdown: false # (オプション) downしているインターフェイスについては取り込みをスキップするオプションです

@@ -12,7 +12,7 @@ import (
 	"github.com/yseto/switch-traffic-to-mackerel/collector"
 )
 
-type MackerelClient interface {
+type mackerelClient interface {
 	CreateHost(param *mackerel.CreateHostParam) (string, error)
 	UpdateHost(hostID string, param *mackerel.UpdateHostParam) (string, error)
 	CreateGraphDefs(payloads []*mackerel.GraphDefsParam) error
@@ -24,7 +24,7 @@ type Queue struct {
 
 	buffers  *list.List
 	Snapshot []collector.MetricsDutum
-	client   MackerelClient
+	client   mackerelClient
 
 	hostID     string
 	targetAddr string
@@ -53,8 +53,8 @@ func NewQueue(qa *QueueArg) *Queue {
 }
 
 // return host ID when create.
-func (q *Queue) InitialForMackerel() (*string, error) {
-	log.Println("init for mackerel")
+func (q *Queue) Init() (*string, error) {
+	log.Println("init queue")
 
 	interfaces := []mackerel.Interface{
 		{
@@ -81,7 +81,7 @@ func (q *Queue) InitialForMackerel() (*string, error) {
 		return nil, err
 	}
 
-	err = q.client.CreateGraphDefs(GraphDefs)
+	err = q.client.CreateGraphDefs(graphDefs)
 	if err != nil {
 		return nil, err
 	}

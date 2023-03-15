@@ -11,7 +11,7 @@ import (
 
 	"github.com/yseto/switch-traffic-to-mackerel/collector"
 	"github.com/yseto/switch-traffic-to-mackerel/config"
-	mckr "github.com/yseto/switch-traffic-to-mackerel/mackerel"
+	"github.com/yseto/switch-traffic-to-mackerel/mackerel"
 )
 
 func main() {
@@ -42,7 +42,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	qa := &mckr.QueueArg{
+	qa := &mackerel.QueueArg{
 		TargetAddr: c.Target,
 		Name:       c.Name,
 		Snapshot:   snapshot,
@@ -51,7 +51,7 @@ func main() {
 		qa.Apikey = c.Mackerel.ApiKey
 		qa.HostID = c.Mackerel.HostID
 	}
-	queue := mckr.NewQueue(qa)
+	queue := mackerel.NewQueue(qa)
 
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
@@ -62,11 +62,12 @@ func main() {
 		return
 	}
 
-	newHostID, err := queue.InitialForMackerel()
+	newHostID, err := queue.Init()
 	if err != nil {
 		log.Fatal(err)
 	}
 	if newHostID != nil {
+		log.Println("save HostID")
 		if err = c.Save(*newHostID); err != nil {
 			log.Fatal(err)
 		}
@@ -77,7 +78,7 @@ func main() {
 	wg.Wait()
 }
 
-func ticker(ctx context.Context, wg *sync.WaitGroup, collectParams *config.Config, queue *mckr.Queue) {
+func ticker(ctx context.Context, wg *sync.WaitGroup, c *config.Config, queue *mackerel.Queue) {
 	t := time.NewTicker(1 * time.Minute)
 	defer func() {
 		t.Stop()
@@ -87,11 +88,11 @@ func ticker(ctx context.Context, wg *sync.WaitGroup, collectParams *config.Confi
 	for {
 		select {
 		case <-t.C:
-			rawMetrics, err := collector.Do(ctx, collectParams)
+			rawMetrics, err := collector.Do(ctx, c)
 			if err != nil {
 				log.Println(err.Error())
 			}
-			if !collectParams.DryRun {
+			if !c.DryRun {
 				queue.Enqueue(rawMetrics)
 			}
 		case <-ctx.Done():

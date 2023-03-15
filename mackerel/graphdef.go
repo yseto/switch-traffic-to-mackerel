@@ -2,7 +2,7 @@ package mackerel
 
 import "github.com/mackerelio/mackerel-client-go"
 
-var GraphDefs = []*mackerel.GraphDefsParam{
+var graphDefs = []*mackerel.GraphDefsParam{
 	{
 		Name:        "custom.interface.ifInDiscards",
 		Unit:        "integer",

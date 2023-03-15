@@ -59,6 +59,11 @@ func runMackerel(ctx context.Context, collectParams *config.Config) error {
 	wg.Add(1)
 	go ticker(ctx, &wg, collectParams)
 
+	if collectParams.DryRun {
+		wg.Wait()
+		return nil
+	}
+
 	client := mackerel.NewClient(collectParams.Mackerel.ApiKey)
 
 	hostId, err := initialForMackerel(collectParams, client)

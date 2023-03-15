@@ -46,6 +46,7 @@ func calcurateDiff(a, b, overflow uint64) uint64 {
 		return b - a
 	}
 }
+
 func (q *Queue) Enqueue(rawMetrics []collector.MetricsDutum) {
 	prevSnapshot := q.Snapshot
 	q.Snapshot = rawMetrics

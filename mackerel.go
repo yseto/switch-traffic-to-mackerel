@@ -104,9 +104,12 @@ func ticker(ctx context.Context, wg *sync.WaitGroup, collectParams *config.Confi
 	for {
 		select {
 		case <-t.C:
-			err := innerTicker(ctx, collectParams)
+			rawMetrics, err := collector.Do(ctx, collectParams)
 			if err != nil {
 				log.Println(err.Error())
+			}
+			if !collectParams.DryRun {
+				Enqueue(rawMetrics)
 			}
 		case <-ctx.Done():
 			log.Println("cancellation from context:", ctx.Err())
@@ -127,16 +130,7 @@ func calcurateDiff(a, b, overflow uint64) uint64 {
 	}
 }
 
-func innerTicker(ctx context.Context, collectParams *config.Config) error {
-	rawMetrics, err := collector.Do(ctx, collectParams)
-	if err != nil {
-		return err
-	}
-
-	if collectParams.DryRun {
-		return nil
-	}
-
+func Enqueue(rawMetrics []collector.MetricsDutum) {
 	prevSnapshot := snapshot
 	snapshot = rawMetrics
 
@@ -171,14 +165,11 @@ func innerTicker(ctx context.Context, collectParams *config.Config) error {
 			Time:  now,
 			Value: value,
 		})
-
 	}
 
 	mutex.Lock()
 	buffers.PushBack(metrics)
 	mutex.Unlock()
-
-	return nil
 }
 
 func sendTicker(ctx context.Context, wg *sync.WaitGroup, client *mackerel.Client, hostId *string) {

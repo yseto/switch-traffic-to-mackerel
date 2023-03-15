@@ -14,6 +14,30 @@ import (
 	"github.com/yseto/switch-traffic-to-mackerel/config"
 )
 
+type MackerelClient interface {
+	CreateHost(param *mackerel.CreateHostParam) (string, error)
+	UpdateHost(hostID string, param *mackerel.UpdateHostParam) (string, error)
+	CreateGraphDefs(payloads []*mackerel.GraphDefsParam) error
+	PostHostMetricValuesByHostID(hostID string, metricValues []*mackerel.MetricValue) error
+}
+
+type Queue struct {
+	sync.Mutex
+
+	buffers  *list.List
+	Snapshot []collector.MetricsDutum
+	client   MackerelClient
+}
+
+func NewQueue(apikey string) *Queue {
+	client := mackerel.NewClient(apikey)
+
+	return &Queue{
+		buffers: list.New(),
+		client:  client,
+	}
+}
+
 var buffers = list.New()
 var mutex = &sync.Mutex{}
 var Snapshot []collector.MetricsDutum

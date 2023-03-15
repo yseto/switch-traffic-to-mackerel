@@ -1,6 +1,6 @@
 module github.com/yseto/switch-traffic-to-mackerel
 
-go 1.18
+go 1.20
 
 require (
 	github.com/gosnmp/gosnmp v1.35.0

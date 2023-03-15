@@ -114,9 +114,6 @@ func (q *Queue) sendToMackerel(ctx context.Context) {
 	}
 
 	e := q.buffers.Front()
-	// log.Infof("send current value: %#v", e.Value)
-	// log.Infof("buffers len: %d", buffers.Len())
-
 	err := q.client.PostHostMetricValuesByHostID(q.hostID, e.Value.([](*mackerel.MetricValue)))
 	if err != nil {
 		log.Println(err)

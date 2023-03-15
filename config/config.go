@@ -17,17 +17,17 @@ type YAMLConfig struct {
 	Community    string     `yaml:"community"`
 	Target       string     `yaml:"target"`
 	Interface    *Interface `yaml:"interface"`
-	Mibs         []string   `yaml:"mibs"`
-	SkipLinkdown bool       `yaml:"skip-linkdown"`
+	Mibs         []string   `yaml:"mibs,omitempty"`
+	SkipLinkdown bool       `yaml:"skip-linkdown,omitempty"`
 	Name         string     `yaml:"name"`
-	Mackerel     *Mackerel  `yaml:"mackerel"`
-	Debug        bool       `yaml:"debug"`
-	DryRun       bool       `yaml:"dry-run"`
+	Mackerel     *Mackerel  `yaml:"mackerel,omitempty"`
+	Debug        bool       `yaml:"debug,omitempty"`
+	DryRun       bool       `yaml:"dry-run,omitempty"`
 }
 
 type Interface struct {
-	Include *string `yaml:"include"`
-	Exclude *string `yaml:"exclude"`
+	Include *string `yaml:"include,omitempty"`
+	Exclude *string `yaml:"exclude,omitempty"`
 }
 
 type Mackerel struct {

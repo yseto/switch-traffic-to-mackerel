@@ -37,6 +37,9 @@ func main() {
 			log.Fatal(err)
 		}
 	} else {
-		runMackerel(ctx, collectParams)
+		err = runMackerel(ctx, collectParams)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 }

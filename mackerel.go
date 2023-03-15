@@ -47,17 +47,11 @@ var deltaValues = map[string]bool{
 	"ifHCOutOctets": true,
 }
 
-func runMackerel(ctx context.Context, collectParams *config.Config) {
-	client := mackerel.NewClient(collectParams.Mackerel.ApiKey)
-
-	hostId, err := initialForMackerel(collectParams, client)
-	if err != nil {
-		log.Fatal(err)
-	}
-
+func runMackerel(ctx context.Context, collectParams *config.Config) error {
+	var err error
 	snapshot, err = collector.Do(ctx, collectParams)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	wg := sync.WaitGroup{}
@@ -65,9 +59,18 @@ func runMackerel(ctx context.Context, collectParams *config.Config) {
 	wg.Add(1)
 	go ticker(ctx, &wg, collectParams)
 
+	client := mackerel.NewClient(collectParams.Mackerel.ApiKey)
+
+	hostId, err := initialForMackerel(collectParams, client)
+	if err != nil {
+		return err
+	}
+
 	wg.Add(1)
 	go sendTicker(ctx, &wg, client, hostId)
 	wg.Wait()
+
+	return nil
 }
 
 func initialForMackerel(c *config.Config, client *mackerel.Client) (*string, error) {

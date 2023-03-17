@@ -5,7 +5,6 @@ import (
 	"errors"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/gosnmp/gosnmp"
 )
@@ -17,22 +16,11 @@ const (
 )
 
 type SNMP struct {
-	handler *gosnmp.GoSNMP
+	handler Handler
 }
 
 func Init(ctx context.Context, target, community string) (*SNMP, error) {
-	g := &gosnmp.GoSNMP{
-		Context:            ctx,
-		Target:             target,
-		Port:               161,
-		Transport:          "udp",
-		Community:          community,
-		Version:            gosnmp.Version2c,
-		Timeout:            time.Duration(2) * time.Second,
-		Retries:            3,
-		ExponentialTimeout: true,
-		MaxOids:            gosnmp.MaxOids,
-	}
+	g := NewHandler(ctx, target, community)
 	err := g.Connect()
 	if err != nil {
 		return nil, err
@@ -41,7 +29,7 @@ func Init(ctx context.Context, target, community string) (*SNMP, error) {
 }
 
 func (s *SNMP) Close() error {
-	return s.handler.Conn.Close()
+	return s.handler.Close()
 }
 
 var (

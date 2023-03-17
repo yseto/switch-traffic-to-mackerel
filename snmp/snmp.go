@@ -80,6 +80,11 @@ func (s *SNMP) BulkWalkGetInterfaceState(length uint64) (map[uint64]bool, error)
 		if err != nil {
 			return err
 		}
+		/*
+			up(1)
+			down(2)
+			testing(3)
+		*/
 		switch pdu.Type {
 		case gosnmp.OctetString:
 			return errParseError

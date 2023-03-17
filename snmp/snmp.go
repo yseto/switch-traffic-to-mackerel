@@ -44,6 +44,12 @@ func (s *SNMP) Close() error {
 	return s.handler.Conn.Close()
 }
 
+var (
+	errGetInterfaceNumber = errors.New("cant get interface number")
+	errParseInterfaceName = errors.New("cant parse interface name")
+	errParseError         = errors.New("cant parse value.")
+)
+
 func (s *SNMP) GetInterfaceNumber() (uint64, error) {
 	result, err := s.handler.Get([]string{MIBifNumber})
 	if err != nil {
@@ -52,7 +58,7 @@ func (s *SNMP) GetInterfaceNumber() (uint64, error) {
 	variable := result.Variables[0]
 	switch variable.Type {
 	case gosnmp.OctetString:
-		return 0, errors.New("cant get interface number")
+		return 0, errGetInterfaceNumber
 	default:
 		return gosnmp.ToBigInt(variable.Value).Uint64(), nil
 	}
@@ -69,7 +75,7 @@ func (s *SNMP) BulkWalkGetInterfaceName(length uint64) (map[uint64]string, error
 		case gosnmp.OctetString:
 			kv[index] = string(pdu.Value.([]byte))
 		default:
-			return errors.New("cant parse interface name.")
+			return errParseInterfaceName
 		}
 		return nil
 	})
@@ -88,7 +94,7 @@ func (s *SNMP) BulkWalkGetInterfaceState(length uint64) (map[uint64]bool, error)
 		}
 		switch pdu.Type {
 		case gosnmp.OctetString:
-			return errors.New("cant parse value.")
+			return errParseError
 		default:
 			tmp := gosnmp.ToBigInt(pdu.Value).Uint64()
 			if tmp != 2 {
@@ -114,7 +120,7 @@ func (s *SNMP) BulkWalk(oid string, length uint64) (map[uint64]uint64, error) {
 		}
 		switch pdu.Type {
 		case gosnmp.OctetString:
-			return errors.New("cant parse value.")
+			return errParseError
 		default:
 			kv[index] = gosnmp.ToBigInt(pdu.Value).Uint64()
 		}

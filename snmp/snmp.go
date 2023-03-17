@@ -61,7 +61,7 @@ func (s *SNMP) GetInterfaceNumber() (uint64, error) {
 func (s *SNMP) BulkWalkGetInterfaceName(length uint64) (map[uint64]string, error) {
 	kv := make(map[uint64]string, length)
 	err := s.handler.BulkWalk(MIBifDescr, func(pdu gosnmp.SnmpPDU) error {
-		index, err := captureIfIndex(MIBifDescr, pdu.Name)
+		index, err := captureIfIndex(pdu.Name)
 		if err != nil {
 			return err
 		}
@@ -82,7 +82,7 @@ func (s *SNMP) BulkWalkGetInterfaceName(length uint64) (map[uint64]string, error
 func (s *SNMP) BulkWalkGetInterfaceState(length uint64) (map[uint64]bool, error) {
 	kv := make(map[uint64]bool, length)
 	err := s.handler.BulkWalk(MIBifOperStatus, func(pdu gosnmp.SnmpPDU) error {
-		index, err := captureIfIndex(MIBifOperStatus, pdu.Name)
+		index, err := captureIfIndex(pdu.Name)
 		if err != nil {
 			return err
 		}
@@ -108,7 +108,7 @@ func (s *SNMP) BulkWalkGetInterfaceState(length uint64) (map[uint64]bool, error)
 func (s *SNMP) BulkWalk(oid string, length uint64) (map[uint64]uint64, error) {
 	kv := make(map[uint64]uint64, length)
 	err := s.handler.BulkWalk(oid, func(pdu gosnmp.SnmpPDU) error {
-		index, err := captureIfIndex(oid, pdu.Name)
+		index, err := captureIfIndex(pdu.Name)
 		if err != nil {
 			return err
 		}
@@ -126,7 +126,7 @@ func (s *SNMP) BulkWalk(oid string, length uint64) (map[uint64]uint64, error) {
 	return kv, nil
 }
 
-func captureIfIndex(oid, name string) (uint64, error) {
-	indexStr := strings.Replace(name, "."+oid+".", "", 1)
-	return strconv.ParseUint(indexStr, 10, 64)
+func captureIfIndex(name string) (uint64, error) {
+	sl := strings.Split(name, ".")
+	return strconv.ParseUint(sl[len(sl)-1], 10, 64)
 }

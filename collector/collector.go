@@ -14,13 +14,24 @@ import (
 	"github.com/yseto/switch-traffic-to-mackerel/snmp"
 )
 
+type snmpClientImpl interface {
+	BulkWalk(oid string, length uint64) (map[uint64]uint64, error)
+	BulkWalkGetInterfaceName(length uint64) (map[uint64]string, error)
+	BulkWalkGetInterfaceState(length uint64) (map[uint64]bool, error)
+	Close() error
+	GetInterfaceNumber() (uint64, error)
+}
+
 func Do(ctx context.Context, c *config.Config) ([]MetricsDutum, error) {
 	snmpClient, err := snmp.Init(ctx, c.Target, c.Community)
 	if err != nil {
 		return nil, err
 	}
 	defer snmpClient.Close()
+	return do(ctx, snmpClient, c)
+}
 
+func do(ctx context.Context, snmpClient snmpClientImpl, c *config.Config) ([]MetricsDutum, error) {
 	ifNumber, err := snmpClient.GetInterfaceNumber()
 	if err != nil {
 		return nil, err

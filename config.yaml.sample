@@ -11,3 +11,4 @@ mackerel:
     x-api-key: xxxxx
     host-id: xxxxx
     name: "" # display Name on Mackerel
+    ignore-network-info: false

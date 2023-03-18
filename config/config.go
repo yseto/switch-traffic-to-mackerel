@@ -29,9 +29,10 @@ type Interface struct {
 }
 
 type Mackerel struct {
-	HostID string `yaml:"host-id"`
-	ApiKey string `yaml:"x-api-key"`
-	Name   string `yaml:"name,omitempty"`
+	HostID            string `yaml:"host-id"`
+	ApiKey            string `yaml:"x-api-key"`
+	Name              string `yaml:"name,omitempty"`
+	IgnoreNetworkInfo bool   `yaml:"ignore-network-info,omitempty"`
 }
 
 type Config struct {

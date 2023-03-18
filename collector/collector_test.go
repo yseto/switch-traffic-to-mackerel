@@ -172,3 +172,25 @@ func TestDo(t *testing.T) {
 	})
 
 }
+
+func TestDoInterfaceIPAddress(t *testing.T) {
+	ctx := context.Background()
+	c := &config.Config{}
+	actual, err := doInterfaceIPAddress(ctx, &mockSnmpClient{}, c)
+	if err != nil {
+		t.Error("invalid raised error")
+	}
+	expected := []Interface{
+		{IfName: "eth0", IpAddress: []string{"192.0.2.1"}},
+		{IfName: "eth1", IpAddress: []string{"192.0.2.2", "192.0.2.3"}},
+		{IfName: "eth2", IpAddress: []string{"198.51.100.1"}},
+		{IfName: "lo0", IpAddress: []string{"127.0.0.1"}},
+	}
+	if d := cmp.Diff(
+		actual,
+		expected,
+		cmpopts.SortSlices(func(i, j Interface) bool { return i.IfName < j.IfName }),
+	); d != "" {
+		t.Errorf("invalid result %s", d)
+	}
+}

@@ -156,3 +156,44 @@ func TestBulkWalk(t *testing.T) {
 		t.Error("invalid argument")
 	}
 }
+
+func TestBulkWalkGetInterfaceIPAddress(t *testing.T) {
+	m := mockHandler{
+		pdus: []gosnmp.SnmpPDU{
+			{
+				Name:  "1.3.6.1.2.1.4.20.1.2.192.0.2.1",
+				Value: 1,
+			},
+			{
+				Name:  "1.3.6.1.2.1.4.20.1.2.192.0.2.2",
+				Value: 1,
+			},
+			// invalid ip
+			{
+				Name:  "1.3.6.1.2.1.4.20.1.2.1024.1.2.3",
+				Value: 2,
+			},
+			{
+				Name:  "1.3.6.1.2.1.4.20.1.2.198.51.100.1",
+				Value: 3,
+			},
+			{
+				Name:  "1.3.6.1.2.1.4.20.1.2.127.0.0.1",
+				Value: 4,
+			},
+		},
+	}
+	s := &SNMP{handler: &m}
+
+	actual, err := s.BulkWalkGetInterfaceIPAddress()
+	expected := map[uint64][]string{
+		1: {"192.0.2.1", "192.0.2.2"},
+		3: {"198.51.100.1"},
+	}
+	if err != nil {
+		t.Error("failed raised error")
+	}
+	if d := cmp.Diff(actual, expected); d != "" {
+		t.Errorf("invalid result %s", d)
+	}
+}

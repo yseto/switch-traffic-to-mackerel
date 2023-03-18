@@ -147,7 +147,7 @@ func TestInit(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.queue.client = tc.mock
-			newHostID, err := tc.queue.Init()
+			newHostID, err := tc.queue.Init(nil)
 			if !errors.Is(err, tc.expectedError) {
 				t.Error("invalid error")
 			}

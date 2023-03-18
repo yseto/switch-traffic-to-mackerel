@@ -60,6 +60,16 @@ func (m *mockSnmpClient) GetInterfaceNumber() (uint64, error) {
 	return 4, nil
 }
 
+func (m *mockSnmpClient) BulkWalkGetInterfaceIPAddress() (map[uint64][]string, error) {
+	return map[uint64][]string{
+		1: {"127.0.0.1"},
+		2: {"192.0.2.1"},
+		3: {"192.0.2.2", "192.0.2.3"},
+		4: {"198.51.100.1"},
+		5: {"198.51.100.2"},
+	}, nil
+}
+
 func TestDo(t *testing.T) {
 	ctx := context.Background()
 
@@ -135,7 +145,7 @@ func TestDo(t *testing.T) {
 		}
 	})
 
-	t.Run("non skip", func(t *testing.T) {
+	t.Run("skip down-linkstate", func(t *testing.T) {
 		c := &config.Config{
 			MIBs:              []string{"ifHCInOctets", "ifHCOutOctets"},
 			SkipDownLinkState: true,

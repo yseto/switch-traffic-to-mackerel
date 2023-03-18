@@ -12,3 +12,8 @@ type MetricsDutum struct {
 func (m *MetricsDutum) String() string {
 	return fmt.Sprintf("%d\t%s\t%s\t%d", m.IfIndex, m.IfName, m.Mib, m.Value)
 }
+
+type Interface struct {
+	IfName    string
+	IpAddress []string
+}

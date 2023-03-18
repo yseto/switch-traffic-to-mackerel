@@ -37,6 +37,11 @@ func main() {
 		c.DryRun = true
 	}
 
+	interfaces, err := collector.DoInterfaceIPAddress(ctx, c)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	snapshot, err := collector.Do(ctx, c)
 	if err != nil {
 		log.Fatal(err)
@@ -65,7 +70,7 @@ func main() {
 		return
 	}
 
-	newHostID, err := queue.Init()
+	newHostID, err := queue.Init(interfaces)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -12,6 +12,7 @@ type snmpClientImpl interface {
 	BulkWalk(oid string, length uint64) (map[uint64]uint64, error)
 	BulkWalkGetInterfaceName(length uint64) (map[uint64]string, error)
 	BulkWalkGetInterfaceState(length uint64) (map[uint64]bool, error)
+	BulkWalkGetInterfaceIPAddress() (map[uint64][]string, error)
 	Close() error
 	GetInterfaceNumber() (uint64, error)
 }
@@ -73,4 +74,41 @@ func do(ctx context.Context, snmpClient snmpClientImpl, c *config.Config) ([]Met
 		debugPrint(metrics)
 	}
 	return metrics, nil
+}
+
+func DoInterfaceIPAddress(ctx context.Context, c *config.Config) ([]Interface, error) {
+	snmpClient, err := snmp.Init(ctx, c.Target, c.Community)
+	if err != nil {
+		return nil, err
+	}
+	defer snmpClient.Close()
+	return doInterfaceIPAddress(ctx, snmpClient, c)
+}
+
+func doInterfaceIPAddress(ctx context.Context, snmpClient snmpClientImpl, c *config.Config) ([]Interface, error) {
+	ifNumber, err := snmpClient.GetInterfaceNumber()
+	if err != nil {
+		return nil, err
+	}
+	ifDescr, err := snmpClient.BulkWalkGetInterfaceName(ifNumber)
+	if err != nil {
+		return nil, err
+	}
+
+	ifIndexIP, err := snmpClient.BulkWalkGetInterfaceIPAddress()
+	if err != nil {
+		return nil, err
+	}
+
+	var interfaces []Interface
+	for ifIndex, ip := range ifIndexIP {
+		if name, ok := ifDescr[ifIndex]; ok {
+			interfaces = append(interfaces, Interface{
+				IfName:    name,
+				IpAddress: ip,
+			})
+		}
+	}
+
+	return interfaces, nil
 }

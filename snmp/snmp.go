@@ -3,6 +3,7 @@ package snmp
 import (
 	"context"
 	"errors"
+	"net"
 	"strconv"
 	"strings"
 
@@ -10,9 +11,10 @@ import (
 )
 
 const (
-	MIBifNumber     = "1.3.6.1.2.1.2.1.0"
-	MIBifDescr      = "1.3.6.1.2.1.2.2.1.2"
-	MIBifOperStatus = "1.3.6.1.2.1.2.2.1.8"
+	MIBifNumber       = "1.3.6.1.2.1.2.1.0"
+	MIBifDescr        = "1.3.6.1.2.1.2.2.1.2"
+	MIBifOperStatus   = "1.3.6.1.2.1.2.2.1.8"
+	MIBipAdEntIfIndex = "1.3.6.1.2.1.4.20.1.2"
 )
 
 type SNMP struct {
@@ -128,4 +130,37 @@ func (s *SNMP) BulkWalk(oid string, length uint64) (map[uint64]uint64, error) {
 func captureIfIndex(name string) (uint64, error) {
 	sl := strings.Split(name, ".")
 	return strconv.ParseUint(sl[len(sl)-1], 10, 64)
+}
+
+func (s *SNMP) BulkWalkGetInterfaceIPAddress() (map[uint64][]string, error) {
+	kv := make(map[uint64][]string)
+	err := s.handler.BulkWalk(MIBipAdEntIfIndex, func(pdu gosnmp.SnmpPDU) error {
+		ipAddress := strings.Replace(pdu.Name, MIBipAdEntIfIndex, "", 1)
+		ipAddress = strings.TrimLeft(ipAddress, ".")
+
+		ip := net.ParseIP(ipAddress)
+		if ip == nil {
+			return nil
+		}
+		if ip.IsLoopback() {
+			return nil
+		}
+
+		switch pdu.Type {
+		case gosnmp.OctetString:
+			return errParseError
+		default:
+			ifIndex := gosnmp.ToBigInt(pdu.Value).Uint64()
+			if _, ok := kv[ifIndex]; ok {
+				kv[ifIndex] = append(kv[ifIndex], ipAddress)
+			} else {
+				kv[ifIndex] = []string{ipAddress}
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return kv, nil
 }

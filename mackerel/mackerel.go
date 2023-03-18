@@ -70,6 +70,7 @@ func (q *Queue) Init(ifs []collector.Interface) (*string, error) {
 			interfaces = append(interfaces, mackerel.Interface{
 				Name:          ifs[i].IfName,
 				IPv4Addresses: ifs[i].IpAddress,
+				MacAddress:    ifs[i].MacAddress,
 			})
 		}
 	}

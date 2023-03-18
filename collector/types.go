@@ -14,6 +14,7 @@ func (m *MetricsDutum) String() string {
 }
 
 type Interface struct {
-	IfName    string
-	IpAddress []string
+	IfName     string
+	IpAddress  []string
+	MacAddress string
 }

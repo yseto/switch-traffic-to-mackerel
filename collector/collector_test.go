@@ -69,6 +69,13 @@ func (m *mockSnmpClient) BulkWalkGetInterfaceIPAddress() (map[uint64][]string, e
 		5: {"198.51.100.2"},
 	}, nil
 }
+func (m *mockSnmpClient) BulkWalkGetInterfacePhysAddress(length uint64) (map[uint64]string, error) {
+	return map[uint64]string{
+		2: "00:00:87:12:34:56",
+		3: "00:00:4C:23:45:67",
+		4: "00:00:0E:34:56:78",
+	}, nil
+}
 
 func TestDo(t *testing.T) {
 	ctx := context.Background()
@@ -181,10 +188,25 @@ func TestDoInterfaceIPAddress(t *testing.T) {
 		t.Error("invalid raised error")
 	}
 	expected := []Interface{
-		{IfName: "eth0", IpAddress: []string{"192.0.2.1"}},
-		{IfName: "eth1", IpAddress: []string{"192.0.2.2", "192.0.2.3"}},
-		{IfName: "eth2", IpAddress: []string{"198.51.100.1"}},
-		{IfName: "lo0", IpAddress: []string{"127.0.0.1"}},
+		{
+			IfName:     "eth0",
+			IpAddress:  []string{"192.0.2.1"},
+			MacAddress: "00:00:87:12:34:56",
+		},
+		{
+			IfName:     "eth1",
+			IpAddress:  []string{"192.0.2.2", "192.0.2.3"},
+			MacAddress: "00:00:4C:23:45:67",
+		},
+		{
+			IfName:     "eth2",
+			IpAddress:  []string{"198.51.100.1"},
+			MacAddress: "00:00:0E:34:56:78",
+		},
+		{
+			IfName:    "lo0",
+			IpAddress: []string{"127.0.0.1"},
+		},
 	}
 	if d := cmp.Diff(
 		actual,

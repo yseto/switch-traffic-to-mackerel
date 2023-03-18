@@ -3,6 +3,7 @@ package snmp
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"strconv"
 	"strings"
@@ -13,6 +14,7 @@ import (
 const (
 	MIBifNumber       = "1.3.6.1.2.1.2.1.0"
 	MIBifDescr        = "1.3.6.1.2.1.2.2.1.2"
+	MIBifPhysAddress  = "1.3.6.1.2.1.2.2.1.6"
 	MIBifOperStatus   = "1.3.6.1.2.1.2.2.1.8"
 	MIBipAdEntIfIndex = "1.3.6.1.2.1.4.20.1.2"
 )
@@ -35,9 +37,10 @@ func (s *SNMP) Close() error {
 }
 
 var (
-	errGetInterfaceNumber = errors.New("cant get interface number")
-	errParseInterfaceName = errors.New("cant parse interface name")
-	errParseError         = errors.New("cant parse value.")
+	errGetInterfaceNumber       = errors.New("cant get interface number")
+	errParseInterfaceName       = errors.New("cant parse interface name")
+	errParseInterfacePhyAddress = errors.New("cant parse phy address")
+	errParseError               = errors.New("cant parse value.")
 )
 
 func (s *SNMP) GetInterfaceNumber() (uint64, error) {
@@ -156,6 +159,35 @@ func (s *SNMP) BulkWalkGetInterfaceIPAddress() (map[uint64][]string, error) {
 			} else {
 				kv[ifIndex] = []string{ipAddress}
 			}
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return kv, nil
+}
+
+func (s *SNMP) BulkWalkGetInterfacePhysAddress(length uint64) (map[uint64]string, error) {
+	kv := make(map[uint64]string, length)
+	err := s.handler.BulkWalk(MIBifPhysAddress, func(pdu gosnmp.SnmpPDU) error {
+		index, err := captureIfIndex(pdu.Name)
+		if err != nil {
+			return err
+		}
+		switch pdu.Type {
+		case gosnmp.OctetString:
+			value, ok := pdu.Value.([]byte)
+			if !ok {
+				return errParseInterfacePhyAddress
+			}
+			var parts []string
+			for _, i := range value {
+				parts = append(parts, fmt.Sprintf("%02x", i))
+			}
+			kv[index] = strings.Join(parts, ":")
+		default:
+			return errParseInterfacePhyAddress
 		}
 		return nil
 	})

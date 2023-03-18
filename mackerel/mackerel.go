@@ -118,8 +118,6 @@ func (q *Queue) sendToMackerel(ctx context.Context) {
 	if err != nil {
 		log.Println(err)
 		return
-	} else {
-		log.Println("success")
 	}
 	q.Lock()
 	q.buffers.Remove(e)

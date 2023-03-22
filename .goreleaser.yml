@@ -8,6 +8,8 @@ builds:
 archives:
   - format: zip
     name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - config.yaml.sample
 release:
   github:
     owner: yseto

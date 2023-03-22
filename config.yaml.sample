@@ -1,0 +1,13 @@
+community: public # the community string for device
+target: 192.2.0.1 # ip address
+interface:
+    include: "" # include interface name
+    exclude: "" # exclude interface name
+mibs: # capture mib name
+    - ifHCInOctets
+    - ifHCOutOctets
+skip-linkdown: true
+mackerel:
+    x-api-key: xxxxx
+    host-id: xxxxx
+    name: "" # display Name on Mackerel

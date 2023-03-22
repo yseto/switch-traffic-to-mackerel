@@ -1,15 +1,20 @@
 module github.com/yseto/switch-traffic-to-mackerel
 
-go 1.18
+go 1.20
 
 require (
+	github.com/google/go-cmp v0.5.9
 	github.com/gosnmp/gosnmp v1.35.0
-	github.com/mackerelio/mackerel-client-go v0.23.0
-	github.com/sirupsen/logrus v1.9.0
+	github.com/mackerelio/mackerel-client-go v0.24.0
+	github.com/maruel/natural v1.1.0
+	github.com/tenntenn/golden v0.4.0
+	github.com/tenntenn/testtime v0.2.2
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
-	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
-	golang.org/x/sys v0.2.0 // indirect
-	golang.org/x/tools v0.3.0 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/josharian/mapfs v0.0.0-20210615234106-095c008854e6 // indirect
+	github.com/josharian/txtarfs v0.0.0-20210615234325-77aca6df5bca // indirect
+	golang.org/x/tools v0.1.5 // indirect
 )

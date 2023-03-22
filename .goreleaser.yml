@@ -1,5 +1,7 @@
 builds:
   - binary: switch-traffic-to-mackerel
+    env:
+      - CGO_ENABLED=0
     goos:
       - linux
     goarch:

@@ -3,6 +3,8 @@ package snmp
 import (
 	"context"
 	"errors"
+	"fmt"
+	"net"
 	"strconv"
 	"strings"
 
@@ -10,9 +12,11 @@ import (
 )
 
 const (
-	MIBifNumber     = "1.3.6.1.2.1.2.1.0"
-	MIBifDescr      = "1.3.6.1.2.1.2.2.1.2"
-	MIBifOperStatus = "1.3.6.1.2.1.2.2.1.8"
+	MIBifNumber       = "1.3.6.1.2.1.2.1.0"
+	MIBifDescr        = "1.3.6.1.2.1.2.2.1.2"
+	MIBifPhysAddress  = "1.3.6.1.2.1.2.2.1.6"
+	MIBifOperStatus   = "1.3.6.1.2.1.2.2.1.8"
+	MIBipAdEntIfIndex = "1.3.6.1.2.1.4.20.1.2"
 )
 
 type SNMP struct {
@@ -33,9 +37,10 @@ func (s *SNMP) Close() error {
 }
 
 var (
-	errGetInterfaceNumber = errors.New("cant get interface number")
-	errParseInterfaceName = errors.New("cant parse interface name")
-	errParseError         = errors.New("cant parse value.")
+	errGetInterfaceNumber       = errors.New("cant get interface number")
+	errParseInterfaceName       = errors.New("cant parse interface name")
+	errParseInterfacePhyAddress = errors.New("cant parse phy address")
+	errParseError               = errors.New("cant parse value.")
 )
 
 func (s *SNMP) GetInterfaceNumber() (uint64, error) {
@@ -128,4 +133,62 @@ func (s *SNMP) BulkWalk(oid string, length uint64) (map[uint64]uint64, error) {
 func captureIfIndex(name string) (uint64, error) {
 	sl := strings.Split(name, ".")
 	return strconv.ParseUint(sl[len(sl)-1], 10, 64)
+}
+
+func (s *SNMP) BulkWalkGetInterfaceIPAddress() (map[uint64][]string, error) {
+	kv := make(map[uint64][]string)
+	err := s.handler.BulkWalk(MIBipAdEntIfIndex, func(pdu gosnmp.SnmpPDU) error {
+		ipAddress := strings.Replace(pdu.Name, MIBipAdEntIfIndex, "", 1)
+		ipAddress = strings.TrimLeft(ipAddress, ".")
+
+		ip := net.ParseIP(ipAddress)
+		if ip == nil {
+			return nil
+		}
+		if ip.IsLoopback() {
+			return nil
+		}
+
+		switch pdu.Type {
+		case gosnmp.OctetString:
+			return errParseError
+		default:
+			ifIndex := gosnmp.ToBigInt(pdu.Value).Uint64()
+			kv[ifIndex] = append(kv[ifIndex], ipAddress)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return kv, nil
+}
+
+func (s *SNMP) BulkWalkGetInterfacePhysAddress(length uint64) (map[uint64]string, error) {
+	kv := make(map[uint64]string, length)
+	err := s.handler.BulkWalk(MIBifPhysAddress, func(pdu gosnmp.SnmpPDU) error {
+		index, err := captureIfIndex(pdu.Name)
+		if err != nil {
+			return err
+		}
+		switch pdu.Type {
+		case gosnmp.OctetString:
+			value, ok := pdu.Value.([]byte)
+			if !ok {
+				return errParseInterfacePhyAddress
+			}
+			var parts []string
+			for _, i := range value {
+				parts = append(parts, fmt.Sprintf("%02x", i))
+			}
+			kv[index] = strings.Join(parts, ":")
+		default:
+			return errParseInterfacePhyAddress
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return kv, nil
 }

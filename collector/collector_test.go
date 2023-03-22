@@ -60,6 +60,23 @@ func (m *mockSnmpClient) GetInterfaceNumber() (uint64, error) {
 	return 4, nil
 }
 
+func (m *mockSnmpClient) BulkWalkGetInterfaceIPAddress() (map[uint64][]string, error) {
+	return map[uint64][]string{
+		1: {"127.0.0.1"},
+		2: {"192.0.2.1"},
+		3: {"192.0.2.2", "192.0.2.3"},
+		4: {"198.51.100.1"},
+		5: {"198.51.100.2"},
+	}, nil
+}
+func (m *mockSnmpClient) BulkWalkGetInterfacePhysAddress(length uint64) (map[uint64]string, error) {
+	return map[uint64]string{
+		2: "00:00:87:12:34:56",
+		3: "00:00:4C:23:45:67",
+		4: "00:00:0E:34:56:78",
+	}, nil
+}
+
 func TestDo(t *testing.T) {
 	ctx := context.Background()
 
@@ -135,7 +152,7 @@ func TestDo(t *testing.T) {
 		}
 	})
 
-	t.Run("non skip", func(t *testing.T) {
+	t.Run("skip down-linkstate", func(t *testing.T) {
 		c := &config.Config{
 			MIBs:              []string{"ifHCInOctets", "ifHCOutOctets"},
 			SkipDownLinkState: true,
@@ -161,4 +178,41 @@ func TestDo(t *testing.T) {
 		}
 	})
 
+}
+
+func TestDoInterfaceIPAddress(t *testing.T) {
+	ctx := context.Background()
+	c := &config.Config{}
+	actual, err := doInterfaceIPAddress(ctx, &mockSnmpClient{}, c)
+	if err != nil {
+		t.Error("invalid raised error")
+	}
+	expected := []Interface{
+		{
+			IfName:     "eth0",
+			IpAddress:  []string{"192.0.2.1"},
+			MacAddress: "00:00:87:12:34:56",
+		},
+		{
+			IfName:     "eth1",
+			IpAddress:  []string{"192.0.2.2", "192.0.2.3"},
+			MacAddress: "00:00:4C:23:45:67",
+		},
+		{
+			IfName:     "eth2",
+			IpAddress:  []string{"198.51.100.1"},
+			MacAddress: "00:00:0E:34:56:78",
+		},
+		{
+			IfName:    "lo0",
+			IpAddress: []string{"127.0.0.1"},
+		},
+	}
+	if d := cmp.Diff(
+		actual,
+		expected,
+		cmpopts.SortSlices(func(i, j Interface) bool { return i.IfName < j.IfName }),
+	); d != "" {
+		t.Errorf("invalid result %s", d)
+	}
 }

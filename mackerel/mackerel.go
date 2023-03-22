@@ -53,14 +53,26 @@ func NewQueue(qa *QueueArg) *Queue {
 }
 
 // return host ID when create.
-func (q *Queue) Init() (*string, error) {
+func (q *Queue) Init(ifs []collector.Interface) (*string, error) {
 	log.Println("init queue")
 
-	interfaces := []mackerel.Interface{
-		{
-			Name:          "main",
-			IPv4Addresses: []string{q.targetAddr},
-		},
+	var interfaces []mackerel.Interface
+
+	if len(ifs) == 0 {
+		interfaces = []mackerel.Interface{
+			{
+				Name:          "main",
+				IPv4Addresses: []string{q.targetAddr},
+			},
+		}
+	} else {
+		for i := range ifs {
+			interfaces = append(interfaces, mackerel.Interface{
+				Name:          ifs[i].IfName,
+				IPv4Addresses: ifs[i].IpAddress,
+				MacAddress:    ifs[i].MacAddress,
+			})
+		}
 	}
 
 	var newHostID *string

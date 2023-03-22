@@ -65,7 +65,16 @@ func main() {
 		return
 	}
 
-	newHostID, err := queue.Init()
+	var interfaces []collector.Interface
+	if !c.Mackerel.IgnoreNetworkInfo {
+		interfaces, err = collector.DoInterfaceIPAddress(ctx, c)
+		if err != nil {
+			log.Println("HINT: try mackerel > ignore-network-info: true")
+			log.Fatal(err)
+		}
+	}
+
+	newHostID, err := queue.Init(interfaces)
 	if err != nil {
 		log.Fatal(err)
 	}

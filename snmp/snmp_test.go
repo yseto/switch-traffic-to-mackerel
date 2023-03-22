@@ -156,3 +156,77 @@ func TestBulkWalk(t *testing.T) {
 		t.Error("invalid argument")
 	}
 }
+
+func TestBulkWalkGetInterfaceIPAddress(t *testing.T) {
+	m := mockHandler{
+		pdus: []gosnmp.SnmpPDU{
+			{
+				Name:  "1.3.6.1.2.1.4.20.1.2.192.0.2.1",
+				Value: 1,
+			},
+			{
+				Name:  "1.3.6.1.2.1.4.20.1.2.192.0.2.2",
+				Value: 1,
+			},
+			// invalid ip
+			{
+				Name:  "1.3.6.1.2.1.4.20.1.2.1024.1.2.3",
+				Value: 2,
+			},
+			{
+				Name:  "1.3.6.1.2.1.4.20.1.2.198.51.100.1",
+				Value: 3,
+			},
+			{
+				Name:  "1.3.6.1.2.1.4.20.1.2.127.0.0.1",
+				Value: 4,
+			},
+		},
+	}
+	s := &SNMP{handler: &m}
+
+	actual, err := s.BulkWalkGetInterfaceIPAddress()
+	expected := map[uint64][]string{
+		1: {"192.0.2.1", "192.0.2.2"},
+		3: {"198.51.100.1"},
+	}
+	if err != nil {
+		t.Error("failed raised error")
+	}
+	if d := cmp.Diff(actual, expected); d != "" {
+		t.Errorf("invalid result %s", d)
+	}
+}
+
+func TestBulkWalkGetInterfacePhysAddress(t *testing.T) {
+	m := mockHandler{
+		pdus: []gosnmp.SnmpPDU{
+			{
+				Name:  "1.3.6.1.2.1.2.2.1.6.1",
+				Value: []byte{0x00, 0x00, 0x87, 0x12, 0x34, 0x56},
+				Type:  gosnmp.OctetString,
+			},
+			{
+				Name:  "1.3.6.1.2.1.2.2.1.6.2",
+				Value: []byte{0x00, 0x00, 0x4C, 0x23, 0x45, 0x67},
+				Type:  gosnmp.OctetString,
+			},
+		},
+	}
+	s := &SNMP{handler: &m}
+
+	actual, err := s.BulkWalkGetInterfacePhysAddress(2)
+	expected := map[uint64]string{
+		1: "00:00:87:12:34:56",
+		2: "00:00:4c:23:45:67",
+	}
+	if err != nil {
+		t.Error("failed raised error")
+	}
+	if d := cmp.Diff(actual, expected); d != "" {
+		t.Errorf("invalid result %s", d)
+	}
+	if !reflect.DeepEqual(m.rootOid, MIBifPhysAddress) {
+		t.Error("invalid argument")
+	}
+}

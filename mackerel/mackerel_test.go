@@ -8,6 +8,8 @@ import (
 	"testing"
 
 	"github.com/mackerelio/mackerel-client-go"
+
+	"github.com/yseto/switch-traffic-to-mackerel/collector"
 )
 
 type mackerelClientMock struct {
@@ -71,6 +73,7 @@ func TestInit(t *testing.T) {
 		returnHostID        *string
 		queue               *Queue
 		mock                *mackerelClientMock
+		interfaces          []collector.Interface
 	}{
 		{
 			name:                "create host when hostID is empty",
@@ -142,12 +145,48 @@ func TestInit(t *testing.T) {
 			},
 			expectedGraphDef: graphDefs,
 		},
+		{
+			name: "[]collector.interface is exist",
+			expectedCreateParam: mackerel.CreateHostParam{
+				Name: "hostname",
+				Interfaces: []mackerel.Interface{
+					{
+						Name:          "eth0",
+						IPv4Addresses: []string{"192.0.2.1", "192.0.2.2"},
+					},
+					{
+						Name:          "eth1",
+						IPv4Addresses: []string{"192.0.2.3"},
+					},
+				},
+			},
+			queue: &Queue{
+				buffers:    list.New(),
+				name:       "hostname",
+				targetAddr: "192.0.2.1",
+			},
+			returnHostID: &id,
+			mock: &mackerelClientMock{
+				returnHostID: "1234567890",
+			},
+			expectedGraphDef: graphDefs,
+			interfaces: []collector.Interface{
+				{
+					IfName:    "eth0",
+					IpAddress: []string{"192.0.2.1", "192.0.2.2"},
+				},
+				{
+					IfName:    "eth1",
+					IpAddress: []string{"192.0.2.3"},
+				},
+			},
+		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.queue.client = tc.mock
-			newHostID, err := tc.queue.Init()
+			newHostID, err := tc.queue.Init(tc.interfaces)
 			if !errors.Is(err, tc.expectedError) {
 				t.Error("invalid error")
 			}

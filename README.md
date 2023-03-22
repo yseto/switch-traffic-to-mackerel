@@ -44,6 +44,7 @@ mackerel: # (オプション)Mackerel に送信する時のパラメータ
     name: "" # (オプション)Mackerel に登録するホスト名
     x-api-key: xxxxx # (必須) Mackerel の APIキー
     host-id: xxxxx # (オプション) Mackerel でのホストID、無指定時の場合、プログラム内で自動的に取得し、設定ファイルを更新します。
+    ignore-network-info: false # (オプション) true時、mackerel へインターフェイスに紐づくIPアドレス、MACアドレスの情報を送信しません。
 ```
 
 ## v0.0.1 からの移行

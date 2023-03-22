@@ -154,11 +154,7 @@ func (s *SNMP) BulkWalkGetInterfaceIPAddress() (map[uint64][]string, error) {
 			return errParseError
 		default:
 			ifIndex := gosnmp.ToBigInt(pdu.Value).Uint64()
-			if _, ok := kv[ifIndex]; ok {
-				kv[ifIndex] = append(kv[ifIndex], ipAddress)
-			} else {
-				kv[ifIndex] = []string{ipAddress}
-			}
+			kv[ifIndex] = append(kv[ifIndex], ipAddress)
 		}
 		return nil
 	})

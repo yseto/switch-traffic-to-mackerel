@@ -28,7 +28,7 @@ func NewHandler(ctx context.Context, target, community string) Handler {
 			Transport:          "udp",
 			Community:          community,
 			Version:            gosnmp.Version2c,
-			Timeout:            time.Duration(2) * time.Second,
+			Timeout:            time.Duration(10) * time.Second,
 			Retries:            3,
 			ExponentialTimeout: true,
 			MaxOids:            gosnmp.MaxOids,

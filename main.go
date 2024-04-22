@@ -103,7 +103,7 @@ func ticker(ctx context.Context, wg *sync.WaitGroup, c *config.Config, queue *ma
 			rawMetrics, err := collector.Do(ctx, c)
 			if err != nil {
 				log.Println(err.Error())
-				return
+				continue
 			}
 			if !c.DryRun {
 				queue.Enqueue(rawMetrics)

@@ -2,6 +2,7 @@ package mib
 
 import (
 	"fmt"
+	"regexp"
 )
 
 var Oidmapping = map[string]string{
@@ -35,4 +36,14 @@ func Validate(rawMibs []string) ([]string, error) {
 		parseMibs = append(parseMibs, name)
 	}
 	return parseMibs, nil
+}
+
+var re = regexp.MustCompile(`^([\d]+\.)+[\d]+$`)
+
+// TODO smi support
+func ValidateCustom(mib string) error {
+	if valid := re.MatchString(mib); !valid {
+		return fmt.Errorf("mib '%s' is not supported", mib)
+	}
+	return nil
 }

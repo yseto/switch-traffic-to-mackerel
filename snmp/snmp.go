@@ -40,7 +40,7 @@ var (
 	errGetInterfaceNumber       = errors.New("cant get interface number")
 	errParseInterfaceName       = errors.New("cant parse interface name")
 	errParseInterfacePhyAddress = errors.New("cant parse phy address")
-	errParseError               = errors.New("cant parse value.")
+	errParseError               = errors.New("cant parse value")
 )
 
 func (s *SNMP) GetInterfaceNumber() (uint64, error) {

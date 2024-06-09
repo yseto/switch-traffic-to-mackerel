@@ -1,8 +1,10 @@
 package mackerel
 
 import (
+	"cmp"
 	"context"
 	"log"
+	"os"
 
 	mackerel "github.com/mackerelio/mackerel-client-go"
 
@@ -31,7 +33,10 @@ type Arg struct {
 }
 
 func New(qa *Arg) *Mackerel {
-	client := mackerel.NewClient(qa.Apikey)
+	baseURL := cmp.Or(os.Getenv("MACKEREL_APIBASE"), "https://api.mackerelio.com/")
+	apikey := cmp.Or(os.Getenv("MACKEREL_APIKEY"), qa.Apikey)
+
+	client, _ := mackerel.NewClientWithOptions(apikey, baseURL, false)
 
 	return &Mackerel{
 		client:     client,

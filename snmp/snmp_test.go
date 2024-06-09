@@ -230,3 +230,37 @@ func TestBulkWalkGetInterfacePhysAddress(t *testing.T) {
 		t.Error("invalid argument")
 	}
 }
+
+func TestGetValues(t *testing.T) {
+	m := mockHandler{
+		result: &gosnmp.SnmpPacket{
+			Variables: []gosnmp.SnmpPDU{
+				{
+					Type:  gosnmp.OctetString,
+					Value: []byte("1.234"),
+				},
+				{
+					Type:  gosnmp.Integer,
+					Value: 12345,
+				},
+			},
+		},
+	}
+	s := &SNMP{handler: &m}
+
+	mibs := []string{"1.2.3.4.5.678", "1.2.3.4.5.789"}
+
+	actual, err := s.GetValues(mibs)
+	if err != nil {
+		t.Error("failed raised error")
+	}
+
+	expected := []float64{1.234, 12345}
+
+	if !reflect.DeepEqual(actual, expected) {
+		t.Error("invalid result")
+	}
+	if !reflect.DeepEqual(m.oids, mibs) {
+		t.Error("invalid argument")
+	}
+}

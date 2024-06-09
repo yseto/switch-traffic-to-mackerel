@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"regexp"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -75,6 +77,16 @@ func (m *mockSnmpClient) BulkWalkGetInterfacePhysAddress(length uint64) (map[uin
 		3: "00:00:4C:23:45:67",
 		4: "00:00:0E:34:56:78",
 	}, nil
+}
+
+func (m *mockSnmpClient) GetValues(mibs []string) ([]float64, error) {
+	var values []float64
+	for idx := range mibs {
+		sp := strings.Split(mibs[idx], ".")
+		v, _ := strconv.ParseFloat(sp[len(sp)-1], 64)
+		values = append(values, v)
+	}
+	return values, nil
 }
 
 func TestDo(t *testing.T) {
@@ -212,6 +224,27 @@ func TestDoInterfaceIPAddress(t *testing.T) {
 		actual,
 		expected,
 		cmpopts.SortSlices(func(i, j Interface) bool { return i.IfName < j.IfName }),
+	); d != "" {
+		t.Errorf("invalid result %s", d)
+	}
+}
+
+func TestDoCustomMIBs(t *testing.T) {
+	ctx := context.Background()
+	c := &config.Config{
+		CustomMIBs: []string{"1.2.3.4.5.678901", "1.2.3.4.6.789012"},
+	}
+	actual, err := doCustomMIBs(ctx, &mockSnmpClient{}, c)
+	if err != nil {
+		t.Error("invalid raised error")
+	}
+	expected := map[string]float64{
+		"1.2.3.4.5.678901": 678901,
+		"1.2.3.4.6.789012": 789012,
+	}
+	if d := cmp.Diff(
+		actual,
+		expected,
 	); d != "" {
 		t.Errorf("invalid result %s", d)
 	}

@@ -42,18 +42,14 @@ func main() {
 		log.Fatal(err)
 	}
 
-	qa := &mackerel.QueueArg{
-		TargetAddr: c.Target,
-		Snapshot:   snapshot,
-	}
+	var mClient *mackerel.Mackerel
 	if c.Mackerel != nil {
-		qa.Apikey = c.Mackerel.ApiKey
-		qa.HostID = c.Mackerel.HostID
-		qa.Name = c.Mackerel.Name
-		if qa.Name == "" {
-			qa.Name = c.Target
-		}
-	}
+		mClient = mackerel.New(&mackerel.Arg{
+			TargetAddr: c.Target,
+			Apikey:     c.Mackerel.ApiKey,
+			HostID:     c.Mackerel.HostID,
+			Name:       cmp.Or(c.Mackerel.Name, c.Target),
+		})
 	queue := mackerel.NewQueue(qa)
 
 	wg := &sync.WaitGroup{}
@@ -64,24 +60,24 @@ func main() {
 		wg.Wait()
 		return
 	}
+		var interfaces []collector.Interface
+		if !c.Mackerel.IgnoreNetworkInfo {
+			interfaces, err = collector.DoInterfaceIPAddress(ctx, c)
+			if err != nil {
+				log.Println("HINT: try mackerel > ignore-network-info: true")
+				log.Fatal(err)
+			}
+		}
 
-	var interfaces []collector.Interface
-	if !c.Mackerel.IgnoreNetworkInfo {
-		interfaces, err = collector.DoInterfaceIPAddress(ctx, c)
+		newHostID, err := mClient.Init(interfaces)
 		if err != nil {
-			log.Println("HINT: try mackerel > ignore-network-info: true")
 			log.Fatal(err)
 		}
-	}
-
-	newHostID, err := queue.Init(interfaces)
-	if err != nil {
-		log.Fatal(err)
-	}
-	if newHostID != nil {
-		log.Println("save HostID")
-		if err = c.Save(*newHostID); err != nil {
-			log.Fatal(err)
+		if newHostID != nil {
+			log.Println("save HostID")
+			if err = c.Save(*newHostID); err != nil {
+				log.Fatal(err)
+			}
 		}
 	}
 

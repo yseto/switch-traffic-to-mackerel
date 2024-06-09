@@ -71,9 +71,6 @@ func do(ctx context.Context, snmpClient snmpClientImpl, c *config.Config) ([]Met
 			metrics = append(metrics, MetricsDutum{IfIndex: ifIndex, Mib: mibName, IfName: ifName, Value: value})
 		}
 	}
-	if c.Debug {
-		debugPrint(metrics)
-	}
 	return metrics, nil
 }
 

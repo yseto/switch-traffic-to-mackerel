@@ -1,11 +1,8 @@
 package mackerel
 
 import (
-	"container/list"
 	"context"
 	"log"
-	"sync"
-	"time"
 
 	mackerel "github.com/mackerelio/mackerel-client-go"
 
@@ -19,33 +16,25 @@ type mackerelClient interface {
 	PostHostMetricValuesByHostID(hostID string, metricValues []*mackerel.MetricValue) error
 }
 
-type Queue struct {
-	sync.Mutex
-
-	buffers  *list.List
-	Snapshot []collector.MetricsDutum
-	client   mackerelClient
-
+type Mackerel struct {
+	client     mackerelClient
 	hostID     string
 	targetAddr string
 	name       string
 }
 
-type QueueArg struct {
+type Arg struct {
 	Apikey     string
 	HostID     string
 	TargetAddr string
 	Name       string
-	Snapshot   []collector.MetricsDutum
 }
 
-func NewQueue(qa *QueueArg) *Queue {
+func New(qa *Arg) *Mackerel {
 	client := mackerel.NewClient(qa.Apikey)
 
-	return &Queue{
-		buffers:    list.New(),
+	return &Mackerel{
 		client:     client,
-		Snapshot:   qa.Snapshot,
 		hostID:     qa.HostID,
 		targetAddr: qa.TargetAddr,
 		name:       qa.Name,
@@ -53,8 +42,8 @@ func NewQueue(qa *QueueArg) *Queue {
 }
 
 // return host ID when create.
-func (q *Queue) Init(ifs []collector.Interface) (*string, error) {
-	log.Println("init queue")
+func (m *Mackerel) Init(ifs []collector.Interface) (*string, error) {
+	log.Println("init mackerel")
 
 	var interfaces []mackerel.Interface
 
@@ -62,7 +51,7 @@ func (q *Queue) Init(ifs []collector.Interface) (*string, error) {
 		interfaces = []mackerel.Interface{
 			{
 				Name:          "main",
-				IPv4Addresses: []string{q.targetAddr},
+				IPv4Addresses: []string{m.targetAddr},
 			},
 		}
 	} else {
@@ -77,61 +66,32 @@ func (q *Queue) Init(ifs []collector.Interface) (*string, error) {
 
 	var newHostID *string
 	var err error
-	if q.hostID != "" {
-		_, err = q.client.UpdateHost(q.hostID, &mackerel.UpdateHostParam{
-			Name:       q.name,
+	if m.hostID != "" {
+		_, err = m.client.UpdateHost(m.hostID, &mackerel.UpdateHostParam{
+			Name:       m.name,
 			Interfaces: interfaces,
 		})
 	} else {
-		q.hostID, err = q.client.CreateHost(&mackerel.CreateHostParam{
-			Name:       q.name,
+		m.hostID, err = m.client.CreateHost(&mackerel.CreateHostParam{
+			Name:       m.name,
 			Interfaces: interfaces,
 		})
-		newHostID = &q.hostID
+		newHostID = &m.hostID
 	}
 	if err != nil {
 		return nil, err
 	}
 
-	err = q.client.CreateGraphDefs(graphDefs)
-	if err != nil {
+	if err = m.CreateGraphDefs(graphDefs); err != nil {
 		return nil, err
 	}
 	return newHostID, nil
 }
 
-func (q *Queue) SendTicker(ctx context.Context, wg *sync.WaitGroup) {
-	t := time.NewTicker(500 * time.Millisecond)
-
-	defer func() {
-		t.Stop()
-		wg.Done()
-	}()
-
-	for {
-		select {
-		case <-t.C:
-			q.sendToMackerel(ctx)
-
-		case <-ctx.Done():
-			log.Println("cancellation from context:", ctx.Err())
-			return
-		}
-	}
+func (m *Mackerel) CreateGraphDefs(d []*mackerel.GraphDefsParam) error {
+	return m.client.CreateGraphDefs(d)
 }
 
-func (q *Queue) sendToMackerel(ctx context.Context) {
-	if q.buffers.Len() == 0 {
-		return
-	}
-
-	e := q.buffers.Front()
-	err := q.client.PostHostMetricValuesByHostID(q.hostID, e.Value.([](*mackerel.MetricValue)))
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	q.Lock()
-	q.buffers.Remove(e)
-	q.Unlock()
+func (m *Mackerel) Send(ctx context.Context, value []*mackerel.MetricValue) error {
+	return m.client.PostHostMetricValuesByHostID(m.hostID, value)
 }

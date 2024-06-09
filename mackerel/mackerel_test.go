@@ -1,7 +1,6 @@
 package mackerel
 
 import (
-	"container/list"
 	"context"
 	"errors"
 	"reflect"
@@ -71,15 +70,14 @@ func TestInit(t *testing.T) {
 		expectedGraphDef    []*mackerel.GraphDefsParam
 		hostID              string
 		returnHostID        *string
-		queue               *Queue
+		queue               *Mackerel
 		mock                *mackerelClientMock
 		interfaces          []collector.Interface
 	}{
 		{
 			name:                "create host when hostID is empty",
 			expectedCreateParam: createHost,
-			queue: &Queue{
-				buffers:    list.New(),
+			queue: &Mackerel{
 				name:       "hostname",
 				targetAddr: "192.0.2.1",
 			},
@@ -92,8 +90,7 @@ func TestInit(t *testing.T) {
 		{
 			name:                "update host when hostID is exist",
 			expectedUpdateParam: updateHost,
-			queue: &Queue{
-				buffers:    list.New(),
+			queue: &Mackerel{
 				name:       "hostname",
 				targetAddr: "192.0.2.2",
 				hostID:     "0987654321",
@@ -105,8 +102,7 @@ func TestInit(t *testing.T) {
 			name:                "create host is error",
 			expectedCreateParam: createHost,
 			expectedError:       e,
-			queue: &Queue{
-				buffers:    list.New(),
+			queue: &Mackerel{
 				name:       "hostname",
 				targetAddr: "192.0.2.1",
 			},
@@ -119,8 +115,7 @@ func TestInit(t *testing.T) {
 			name:                "update host is error",
 			expectedUpdateParam: updateHost,
 			expectedError:       e,
-			queue: &Queue{
-				buffers:    list.New(),
+			queue: &Mackerel{
 				name:       "hostname",
 				targetAddr: "192.0.2.2",
 				hostID:     "0987654321",
@@ -134,8 +129,7 @@ func TestInit(t *testing.T) {
 			name:                "createGraphDef is error",
 			expectedUpdateParam: updateHost,
 			expectedError:       e,
-			queue: &Queue{
-				buffers:    list.New(),
+			queue: &Mackerel{
 				name:       "hostname",
 				targetAddr: "192.0.2.2",
 				hostID:     "0987654321",
@@ -160,8 +154,7 @@ func TestInit(t *testing.T) {
 					},
 				},
 			},
-			queue: &Queue{
-				buffers:    list.New(),
+			queue: &Mackerel{
 				name:       "hostname",
 				targetAddr: "192.0.2.1",
 			},
@@ -207,77 +200,21 @@ func TestInit(t *testing.T) {
 
 }
 
-func TestSendToMackerel(t *testing.T) {
+func TestSend(t *testing.T) {
 	ctx := context.Background()
 
-	t.Run("when empty queue", func(t *testing.T) {
-		mock := &mackerelClientMock{}
-		queue := &Queue{
-			buffers: list.New(),
-			hostID:  "0987654321",
-			client:  mock,
-		}
+	mock := &mackerelClientMock{}
+	mc := &Mackerel{
+		hostID: "0987654321",
+		client: mock,
+	}
 
-		queue.sendToMackerel(ctx)
+	if err := mc.Send(ctx, nil); err != nil {
+		t.Errorf("occur error %v", err)
+	}
 
-		if mock.hostID != "" {
-			t.Error("invalid get hostID")
-		}
-	})
-
-	t.Run("when queue length = 1", func(t *testing.T) {
-		mock := &mackerelClientMock{}
-		queue := &Queue{
-			buffers: list.New(),
-			hostID:  "0987654321",
-			client:  mock,
-		}
-
-		queue.buffers.PushBack([]*mackerel.MetricValue{
-			{
-				Name: "foo",
-			},
-		})
-
-		queue.sendToMackerel(ctx)
-
-		if mock.hostID == "" {
-			t.Error("invalid need hostID")
-		}
-
-		if queue.buffers.Len() != 0 {
-			t.Error("invalid queue length")
-		}
-	})
-
-	t.Run("when queue length = 2", func(t *testing.T) {
-		mock := &mackerelClientMock{}
-		queue := &Queue{
-			buffers: list.New(),
-			hostID:  "0987654321",
-			client:  mock,
-		}
-
-		queue.buffers.PushBack([]*mackerel.MetricValue{
-			{
-				Name: "foo",
-			},
-		})
-		queue.buffers.PushBack([]*mackerel.MetricValue{
-			{
-				Name: "foo",
-			},
-		})
-
-		queue.sendToMackerel(ctx)
-
-		if mock.hostID == "" {
-			t.Error("invalid need hostID")
-		}
-
-		if queue.buffers.Len() != 1 {
-			t.Error("invalid queue length")
-		}
-	})
+	if mock.hostID == "" {
+		t.Error("invalid need hostID")
+	}
 
 }

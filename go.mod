@@ -1,6 +1,6 @@
 module github.com/yseto/switch-traffic-to-mackerel
 
-go 1.20
+go 1.22.4
 
 require (
 	github.com/google/go-cmp v0.5.9

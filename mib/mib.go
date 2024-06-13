@@ -30,7 +30,7 @@ func Validate(rawMibs []string) ([]string, error) {
 
 	for _, name := range rawMibs {
 		if _, exists := Oidmapping[name]; !exists {
-			return nil, fmt.Errorf("mib %s is not supported.", name)
+			return nil, fmt.Errorf("mib %s is not supported", name)
 		}
 		parseMibs = append(parseMibs, name)
 	}

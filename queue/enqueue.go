@@ -1,4 +1,4 @@
-package mackerel
+package queue
 
 import (
 	"fmt"
@@ -48,8 +48,8 @@ func calcurateDiff(a, b, overflow uint64) uint64 {
 }
 
 func (q *Queue) Enqueue(rawMetrics []collector.MetricsDutum) {
-	prevSnapshot := q.Snapshot
-	q.Snapshot = rawMetrics
+	prevSnapshot := q.snapshot
+	q.snapshot = rawMetrics
 
 	now := time.Now().Unix()
 

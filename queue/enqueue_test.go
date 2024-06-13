@@ -1,4 +1,4 @@
-package mackerel
+package queue
 
 import (
 	"container/list"
@@ -36,7 +36,7 @@ func TestEnqueue(t *testing.T) {
 	t.Run("replace Snapshot", func(t *testing.T) {
 		queue := &Queue{
 			buffers: list.New(),
-			Snapshot: []collector.MetricsDutum{
+			snapshot: []collector.MetricsDutum{
 				{
 					IfIndex: 1,
 					Mib:     "",
@@ -55,7 +55,7 @@ func TestEnqueue(t *testing.T) {
 		}
 		queue.Enqueue(newSnapshot)
 
-		if !reflect.DeepEqual(queue.Snapshot, newSnapshot) {
+		if !reflect.DeepEqual(queue.snapshot, newSnapshot) {
 			t.Error("replace Snapshot is invalid")
 		}
 	})
@@ -63,7 +63,7 @@ func TestEnqueue(t *testing.T) {
 	t.Run("calcurate", func(t *testing.T) {
 		queue := &Queue{
 			buffers: list.New(),
-			Snapshot: []collector.MetricsDutum{
+			snapshot: []collector.MetricsDutum{
 				{
 					IfIndex: 1,
 					Mib:     "ifHCInOctets",

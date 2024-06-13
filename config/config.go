@@ -60,10 +60,10 @@ func Init(filename string) (*Config, error) {
 	}
 
 	if t.Community == "" {
-		return nil, fmt.Errorf("community is needed.")
+		return nil, fmt.Errorf("community is needed")
 	}
 	if t.Target == "" {
-		return nil, fmt.Errorf("target is needed.")
+		return nil, fmt.Errorf("target is needed")
 	}
 
 	c := &Config{
@@ -76,7 +76,7 @@ func Init(filename string) (*Config, error) {
 
 	if t.Interface != nil {
 		if t.Interface.Include != nil && t.Interface.Exclude != nil {
-			return nil, fmt.Errorf("Interface.Exclude, Interface.Include is exclusive control.")
+			return nil, fmt.Errorf("Interface.Exclude, Interface.Include is exclusive control")
 		}
 		if t.Interface.Include != nil {
 			c.IncludeRegexp, err = regexp.Compile(*t.Interface.Include)

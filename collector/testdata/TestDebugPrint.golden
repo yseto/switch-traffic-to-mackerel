@@ -1,9 +1,0 @@
-[H[2JThu Jan  1 00:00:01 1970
-1	lo0	ifHCInOctets	60
-1	lo0	ifHCOutOctets	120
-2	eth0	ifHCInOctets	60
-2	eth0	ifHCOutOctets	120
-3	eth1	ifHCInOctets	60
-3	eth1	ifHCOutOctets	120
-4	eth2	ifHCInOctets	60
-4	eth2	ifHCOutOctets	120

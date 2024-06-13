@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"context"
 	"flag"
 	"log"
@@ -12,6 +13,7 @@ import (
 	"github.com/yseto/switch-traffic-to-mackerel/collector"
 	"github.com/yseto/switch-traffic-to-mackerel/config"
 	"github.com/yseto/switch-traffic-to-mackerel/mackerel"
+	"github.com/yseto/switch-traffic-to-mackerel/queue"
 )
 
 func main() {
@@ -42,55 +44,53 @@ func main() {
 		log.Fatal(err)
 	}
 
-	qa := &mackerel.QueueArg{
-		TargetAddr: c.Target,
-		Snapshot:   snapshot,
-	}
+	var mClient *mackerel.Mackerel
 	if c.Mackerel != nil {
-		qa.Apikey = c.Mackerel.ApiKey
-		qa.HostID = c.Mackerel.HostID
-		qa.Name = c.Mackerel.Name
-		if qa.Name == "" {
-			qa.Name = c.Target
+		mClient = mackerel.New(&mackerel.Arg{
+			TargetAddr: c.Target,
+			Apikey:     c.Mackerel.ApiKey,
+			HostID:     c.Mackerel.HostID,
+			Name:       cmp.Or(c.Mackerel.Name, c.Target),
+		})
+
+		var interfaces []collector.Interface
+		if !c.Mackerel.IgnoreNetworkInfo {
+			interfaces, err = collector.DoInterfaceIPAddress(ctx, c)
+			if err != nil {
+				log.Println("HINT: try mackerel > ignore-network-info: true")
+				log.Fatal(err)
+			}
+		}
+
+		newHostID, err := mClient.Init(interfaces)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if newHostID != nil {
+			log.Println("save HostID")
+			if err = c.Save(*newHostID); err != nil {
+				log.Fatal(err)
+			}
 		}
 	}
-	queue := mackerel.NewQueue(qa)
+
+	queueHandler := queue.New(queue.Arg{
+		SendFunc: mClient,
+		Debug:    c.Debug,
+		DryRun:   c.DryRun,
+		Snapshot: snapshot,
+	})
 
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
-	go ticker(ctx, wg, c, queue)
-
-	if c.DryRun {
-		wg.Wait()
-		return
-	}
-
-	var interfaces []collector.Interface
-	if !c.Mackerel.IgnoreNetworkInfo {
-		interfaces, err = collector.DoInterfaceIPAddress(ctx, c)
-		if err != nil {
-			log.Println("HINT: try mackerel > ignore-network-info: true")
-			log.Fatal(err)
-		}
-	}
-
-	newHostID, err := queue.Init(interfaces)
-	if err != nil {
-		log.Fatal(err)
-	}
-	if newHostID != nil {
-		log.Println("save HostID")
-		if err = c.Save(*newHostID); err != nil {
-			log.Fatal(err)
-		}
-	}
+	go collectTicker(ctx, wg, c, queueHandler)
 
 	wg.Add(1)
-	go queue.SendTicker(ctx, wg)
+	go sendTicker(ctx, wg, queueHandler)
 	wg.Wait()
 }
 
-func ticker(ctx context.Context, wg *sync.WaitGroup, c *config.Config, queue *mackerel.Queue) {
+func collectTicker(ctx context.Context, wg *sync.WaitGroup, c *config.Config, queueHandler *queue.Queue) {
 	t := time.NewTicker(1 * time.Minute)
 	defer func() {
 		t.Stop()
@@ -105,9 +105,32 @@ func ticker(ctx context.Context, wg *sync.WaitGroup, c *config.Config, queue *ma
 				log.Println(err.Error())
 				continue
 			}
-			if !c.DryRun {
-				queue.Enqueue(rawMetrics)
-			}
+			queueHandler.Enqueue(rawMetrics)
+
+		case <-ctx.Done():
+			log.Println("cancellation from context:", ctx.Err())
+			return
+		}
+	}
+}
+
+type sendTickerFunc interface {
+	Tick(context.Context)
+}
+
+func sendTicker(ctx context.Context, wg *sync.WaitGroup, f sendTickerFunc) {
+	t := time.NewTicker(500 * time.Millisecond)
+
+	defer func() {
+		t.Stop()
+		wg.Done()
+	}()
+
+	for {
+		select {
+		case <-t.C:
+			f.Tick(ctx)
+
 		case <-ctx.Done():
 			log.Println("cancellation from context:", ctx.Err())
 			return

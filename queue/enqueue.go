@@ -88,3 +88,27 @@ func (q *Queue) Enqueue(rawMetrics []collector.MetricsDutum) {
 	q.buffers.PushBack(metrics)
 	q.Unlock()
 }
+
+type CustomMIBValue struct {
+	Name  string
+	Value float64
+}
+
+var now = time.Now
+
+func (q *Queue) EnqueueCustomMIB(c []CustomMIBValue) {
+	now := now().Unix()
+	metrics := make([]*mackerel.MetricValue, 0)
+
+	for idx := range c {
+		metrics = append(metrics, &mackerel.MetricValue{
+			Name:  c[idx].Name,
+			Time:  now,
+			Value: c[idx].Value,
+		})
+	}
+
+	q.Lock()
+	q.buffers.PushBack(metrics)
+	q.Unlock()
+}

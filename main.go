@@ -72,6 +72,11 @@ func main() {
 				log.Fatal(err)
 			}
 		}
+		if len(c.CustomMIBsGraphDefs) > 0 {
+			if err = mClient.CreateGraphDefs(c.CustomMIBsGraphDefs); err != nil {
+				log.Fatal(err)
+			}
+		}
 	}
 
 	queueHandler := queue.New(queue.Arg{
@@ -106,6 +111,23 @@ func collectTicker(ctx context.Context, wg *sync.WaitGroup, c *config.Config, qu
 				continue
 			}
 			queueHandler.Enqueue(rawMetrics)
+
+			resp, err := collector.DoCustomMIBs(ctx, c)
+			if err != nil {
+				log.Println(err.Error())
+				continue
+			}
+
+			bucket := make([]queue.CustomMIBValue, 0)
+			for metricName, mib := range c.CustomMIBmetricNameMappedMIBs {
+				if f, ok := resp[mib]; ok {
+					bucket = append(bucket, queue.CustomMIBValue{
+						Name:  metricName,
+						Value: f,
+					})
+				}
+			}
+			queueHandler.EnqueueCustomMIB(bucket)
 
 		case <-ctx.Done():
 			log.Println("cancellation from context:", ctx.Err())

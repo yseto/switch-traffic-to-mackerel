@@ -16,6 +16,7 @@ type snmpClientImpl interface {
 	BulkWalkGetInterfacePhysAddress(length uint64) (map[uint64]string, error)
 	Close() error
 	GetInterfaceNumber() (uint64, error)
+	GetValues(mibs []string) ([]float64, error)
 }
 
 func Do(ctx context.Context, c *config.Config) ([]MetricsDutum, error) {
@@ -116,4 +117,27 @@ func doInterfaceIPAddress(ctx context.Context, snmpClient snmpClientImpl, c *con
 	}
 
 	return interfaces, nil
+}
+
+// mib:value
+func DoCustomMIBs(ctx context.Context, c *config.Config) (map[string]float64, error) {
+	snmpClient, err := snmp.Init(ctx, c.Target, c.Community)
+	if err != nil {
+		return nil, err
+	}
+	defer snmpClient.Close()
+	return doCustomMIBs(ctx, snmpClient, c)
+}
+
+// mib:value
+func doCustomMIBs(ctx context.Context, snmpClient snmpClientImpl, c *config.Config) (map[string]float64, error) {
+	values, err := snmpClient.GetValues(c.CustomMIBs)
+	if err != nil {
+		return nil, err
+	}
+	var result = make(map[string]float64, 0)
+	for idx := range values {
+		result[c.CustomMIBs[idx]] = values[idx]
+	}
+	return result, nil
 }

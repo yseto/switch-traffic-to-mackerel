@@ -192,3 +192,30 @@ func (s *SNMP) BulkWalkGetInterfacePhysAddress(length uint64) (map[uint64]string
 	}
 	return kv, nil
 }
+
+func (s *SNMP) GetValues(mibs []string) ([]float64, error) {
+	result, err := s.handler.Get(mibs)
+	if err != nil {
+		return nil, err
+	}
+	var values []float64
+	for _, variable := range result.Variables {
+		switch variable.Type {
+		case gosnmp.OctetString:
+			value, ok := variable.Value.([]byte)
+			if !ok {
+				return nil, fmt.Errorf("value cant parse : %v", variable.Value)
+			}
+			v, err := strconv.ParseFloat(string(value), 64)
+			if err != nil {
+				return nil, err
+			}
+			values = append(values, v)
+
+		default:
+			v, _ := gosnmp.ToBigInt(variable.Value).Float64()
+			values = append(values, v)
+		}
+	}
+	return values, nil
+}

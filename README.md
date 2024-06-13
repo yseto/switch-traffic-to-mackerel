@@ -45,6 +45,12 @@ mackerel: # (オプション)Mackerel に送信する時のパラメータ
     x-api-key: xxxxx # (必須) Mackerel の APIキー
     host-id: xxxxx # (オプション) Mackerel でのホストID、無指定時の場合、プログラム内で自動的に取得し、設定ファイルを更新します。
     ignore-network-info: false # (オプション) true時、mackerel へインターフェイスに紐づくIPアドレス、MACアドレスの情報を送信しません。
+custom-mibs:
+#   - display-name: uptime
+#     unit: integer
+#     mibs:
+#       - display-name: uptime
+#         mib: 1.3.6.1.2.1.1.3.0
 ```
 
 ## v0.0.1 からの移行

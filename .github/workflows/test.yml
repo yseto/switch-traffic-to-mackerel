@@ -23,4 +23,4 @@ jobs:
     - uses: actions/setup-go@v5
       with:
         go-version-file: go.mod
-    - run: make deps-test test
+    - run: make test

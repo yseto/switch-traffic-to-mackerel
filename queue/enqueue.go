@@ -24,8 +24,6 @@ var overflowValue = map[string]uint64{
 var receiveDirection = map[string]bool{
 	"ifInOctets":   true,
 	"ifHCInOctets": true,
-	"ifInDiscards": true,
-	"ifInErrors":   true,
 }
 
 var deltaValues = map[string]bool{

@@ -40,27 +40,23 @@ func TestTick(t *testing.T) {
 	})
 
 	t.Run("exist queue", func(t *testing.T) {
-		var oldNow = now
-		now = func() time.Time {
-			return time.Unix(1, 0)
-		}
-		t.Cleanup(func() {
-			now = oldNow
-		})
+		tm := time.Now().Unix()
 		mock := &mockSendFunc{}
 		q := New(Arg{
 			SendFunc: mock,
 		})
 
-		q.EnqueueCustomMIB([]CustomMIBValue{
+		q.Enqueue([]*mackerel.MetricValue{
 			{
 				Name:  "name12345",
+				Time:  tm,
 				Value: 1.2345,
 			},
 		})
-		q.EnqueueCustomMIB([]CustomMIBValue{
+		q.Enqueue([]*mackerel.MetricValue{
 			{
 				Name:  "name12345678",
+				Time:  tm,
 				Value: 1.2345678,
 			},
 		})
@@ -71,7 +67,7 @@ func TestTick(t *testing.T) {
 		expected := []*mackerel.MetricValue{
 			{
 				Name:  "name12345",
-				Time:  1,
+				Time:  tm,
 				Value: 1.2345,
 			},
 		}
@@ -87,7 +83,7 @@ func TestTick(t *testing.T) {
 		actual = mock.values
 		expected = append(expected, &mackerel.MetricValue{
 			Name:  "name12345678",
-			Time:  1,
+			Time:  tm,
 			Value: 1.2345678,
 		})
 
@@ -97,6 +93,5 @@ func TestTick(t *testing.T) {
 		if mock.count != 2 {
 			t.Error("invalid. called Send()")
 		}
-
 	})
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/yseto/switch-traffic-to-mackerel/collector"
 	"github.com/yseto/switch-traffic-to-mackerel/config"
 	"github.com/yseto/switch-traffic-to-mackerel/mackerel"
+	"github.com/yseto/switch-traffic-to-mackerel/metric"
 	"github.com/yseto/switch-traffic-to-mackerel/queue"
 )
 
@@ -37,11 +38,6 @@ func main() {
 	if c.Mackerel == nil {
 		log.Println("force dry-run.")
 		c.DryRun = true
-	}
-
-	snapshot, err := collector.Do(ctx, c)
-	if err != nil {
-		log.Fatal(err)
 	}
 
 	var mClient *mackerel.Mackerel
@@ -83,7 +79,6 @@ func main() {
 		SendFunc: mClient,
 		Debug:    c.Debug,
 		DryRun:   c.DryRun,
-		Snapshot: snapshot,
 	})
 
 	wg := &sync.WaitGroup{}
@@ -102,32 +97,27 @@ func collectTicker(ctx context.Context, wg *sync.WaitGroup, c *config.Config, qu
 		wg.Done()
 	}()
 
+	customConverter := metric.NewCustom(c.CustomMIBmetricNameMappedMIBs)
+
 	for {
 		select {
 		case <-t.C:
-			rawMetrics, err := collector.Do(ctx, c)
+			metrics, err := collector.Do(ctx, c)
 			if err != nil {
 				log.Println(err.Error())
 				continue
 			}
-			queueHandler.Enqueue(rawMetrics)
+			if m := metric.Convert(metrics); m != nil {
+				queueHandler.Enqueue(m)
+			}
 
-			resp, err := collector.DoCustomMIBs(ctx, c)
+			customMetrics, err := collector.DoCustomMIBs(ctx, c)
 			if err != nil {
 				log.Println(err.Error())
 				continue
 			}
 
-			bucket := make([]queue.CustomMIBValue, 0)
-			for metricName, mib := range c.CustomMIBmetricNameMappedMIBs {
-				if f, ok := resp[mib]; ok {
-					bucket = append(bucket, queue.CustomMIBValue{
-						Name:  metricName,
-						Value: f,
-					})
-				}
-			}
-			queueHandler.EnqueueCustomMIB(bucket)
+			queueHandler.Enqueue(customConverter.ConvertCustom(customMetrics))
 
 		case <-ctx.Done():
 			log.Println("cancellation from context:", ctx.Err())

@@ -79,7 +79,10 @@ func Init(filename string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
+	return convert(t)
+}
 
+func convert(t YAMLConfig) (*Config, error) {
 	if t.Community == "" {
 		return nil, fmt.Errorf("community is needed")
 	}
@@ -96,6 +99,7 @@ func Init(filename string) (*Config, error) {
 		CustomMIBmetricNameMappedMIBs: map[string]string{},
 	}
 
+	var err error
 	if t.Interface != nil {
 		if t.Interface.Include != nil && t.Interface.Exclude != nil {
 			return nil, fmt.Errorf("Interface.Exclude, Interface.Include is exclusive control")
@@ -137,7 +141,7 @@ func Init(filename string) (*Config, error) {
 	return c, nil
 }
 
-var metricRe = regexp.MustCompile("[-a-zA-Z0-9_]+")
+var metricRe = regexp.MustCompile("^[a-zA-Z0-9._-]+$")
 
 func customMIBMackerelMetricNameParent(graphDisplayName string) string {
 	a := md5.Sum([]byte(graphDisplayName))
@@ -163,7 +167,7 @@ func generateCustomMIB(t *CustomMIB) (*customMIBConfig, error) {
 	var metricNameMappedMIBs = make(map[string]string, 0)
 
 	for idx := range t.Mibs {
-		metricName := cmp.Or(t.Mibs[idx].MetricName, t.Mibs[idx].DisplayName)
+		metricName := t.Mibs[idx].MetricName
 		if !metricRe.MatchString(metricName) {
 			return nil, fmt.Errorf("metricName is not valid : %s", metricName)
 		}
@@ -171,7 +175,7 @@ func generateCustomMIB(t *CustomMIB) (*customMIBConfig, error) {
 		mackerelMetricName := customMIBMackerelMetricName(t.DisplayName, metricName)
 		metrics = append(metrics, &mackerel.GraphDefsMetric{
 			Name:        mackerelMetricName,
-			DisplayName: t.Mibs[idx].DisplayName,
+			DisplayName: cmp.Or(t.Mibs[idx].DisplayName, t.Mibs[idx].MetricName),
 		})
 
 		err := mib.ValidateCustom(t.Mibs[idx].MIB)

@@ -5,6 +5,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"golang.org/x/exp/maps"
 )
 
 func TestValidate(t *testing.T) {
@@ -76,5 +77,18 @@ func TestValidateCustom(t *testing.T) {
 		if (actual == nil) != isValid {
 			t.Errorf("not a match : %s", tc)
 		}
+	}
+}
+
+func TestOidMapping(t *testing.T) {
+	actual := maps.Keys(oidMapping)
+	expected := []string{"ifInOctets", "ifOutOctets", "ifHCInOctets", "ifHCOutOctets", "ifInDiscards", "ifOutDiscards", "ifInErrors", "ifOutErrors"}
+
+	if diff := cmp.Diff(
+		actual,
+		expected,
+		cmpopts.SortSlices(func(i, j string) bool { return i < j }),
+	); diff != "" {
+		t.Errorf("value is mismatch (-actual +expected):%s", diff)
 	}
 }

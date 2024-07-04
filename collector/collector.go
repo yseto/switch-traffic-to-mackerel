@@ -49,7 +49,7 @@ func do(ctx context.Context, snmpClient snmpClientImpl, c *config.Config) ([]Met
 	metrics := make([]MetricsDutum, 0)
 
 	for _, mibName := range c.MIBs {
-		values, err := snmpClient.BulkWalk(mib.Oidmapping[mibName], ifNumber)
+		values, err := snmpClient.BulkWalk(mib.Oidmapping()[mibName], ifNumber)
 		if err != nil {
 			return nil, err
 		}

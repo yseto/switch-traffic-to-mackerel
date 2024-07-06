@@ -46,8 +46,8 @@ type CustomMIB struct {
 }
 
 type MIBwithDisplayName struct {
-	DisplayName string `yaml:"display-name"`
-	MetricName  string `yaml:"metric-name,omitempty"`
+	DisplayName string `yaml:"display-name,omitempty"`
+	MetricName  string `yaml:"metric-name"`
 	MIB         string `yaml:"mib"`
 }
 

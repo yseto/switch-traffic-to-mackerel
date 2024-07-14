@@ -8,7 +8,6 @@ import (
 	"sync"
 
 	"github.com/mackerelio/mackerel-client-go"
-	"github.com/yseto/switch-traffic-to-mackerel/collector"
 )
 
 type SendInterface interface {
@@ -23,8 +22,6 @@ type Queue struct {
 
 	debug  bool
 	dryrun bool
-
-	snapshot []collector.MetricsDutum
 }
 
 type Arg struct {
@@ -32,8 +29,6 @@ type Arg struct {
 
 	Debug  bool
 	DryRun bool
-
-	Snapshot []collector.MetricsDutum
 }
 
 type noopSendFunc struct{}
@@ -52,8 +47,6 @@ func New(qa Arg) *Queue {
 		sendFunc: qa.SendFunc,
 		debug:    qa.Debug,
 		dryrun:   qa.DryRun,
-
-		snapshot: qa.Snapshot,
 	}
 }
 
@@ -81,5 +74,11 @@ func (q *Queue) Tick(ctx context.Context) {
 
 	q.Lock()
 	q.buffers.Remove(e)
+	q.Unlock()
+}
+
+func (q *Queue) Enqueue(rawMetrics []*mackerel.MetricValue) {
+	q.Lock()
+	q.buffers.PushBack(rawMetrics)
 	q.Unlock()
 }

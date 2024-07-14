@@ -49,7 +49,7 @@ custom-mibs:
 #   - display-name: uptime
 #     unit: integer
 #     mibs:
-#       - display-name: uptime
+#       - metric-name: uptime
 #         mib: 1.3.6.1.2.1.1.3.0
 ```
 
